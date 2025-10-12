@@ -35,7 +35,7 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
-    if: ${{ secrets.SONAR_TOKEN != '' }}
+    if: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,7 +81,7 @@ jobs:
   test-only:
     name: Tests Only
     runs-on: ubuntu-latest
-    if: ${{ secrets.SONAR_TOKEN == '' }}
+    if: ${{ !secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
