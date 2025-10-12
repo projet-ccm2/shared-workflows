@@ -1,0 +1,158 @@
+name: Node.js CD
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: '22.13.1'
+      build-command:
+        required: false
+        type: string
+        default: 'npm run build'
+      install-command:
+        required: false
+        type: string
+        default: 'npm install'
+      dockerfile-path:
+        required: false
+        type: string
+        default: './Dockerfile'
+      docker-context:
+        required: false
+        type: string
+        default: '.'
+      docker-image-name:
+        required: true
+        type: string
+      docker-tag:
+        required: false
+        type: string
+        default: 'latest'
+      registry-url:
+        required: false
+        type: string
+        default: 'ghcr.io'
+      environment:
+        required: false
+        type: string
+        default: 'production'
+      health-check-url:
+        required: false
+        type: string
+        default: ''
+      health-check-timeout:
+        required: false
+        type: string
+        default: '300'
+    secrets:
+      REGISTRY_TOKEN:
+        required: true
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies
+        run: ${{ inputs.install-command }}
+
+      - name: Build application
+        run: ${{ inputs.build-command }}
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry-url }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.registry-url }}/${{ github.repository }}/${{ inputs.docker-image-name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ inputs.docker-tag }},enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.docker-context }}
+          file: ${{ inputs.dockerfile-path }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: always() && needs.build-and-push.result == 'success'
+    steps:
+      - name: Deploy to ${{ inputs.environment }}
+        run: |
+          echo "🚀 Deploying to ${{ inputs.environment }} environment..."
+          echo "Image: ${{ needs.build-and-push.outputs.image-tags }}"
+          echo "Digest: ${{ needs.build-and-push.outputs.image-digest }}"
+          
+          # Logique de déploiement générique
+          # Ici vous pouvez ajouter votre logique de déploiement spécifique
+          # - Déploiement sur Kubernetes
+          # - Déploiement sur Docker Swarm
+          # - Déploiement sur un serveur
+          # - Déploiement sur un service cloud (AWS, Azure, GCP)
+          
+          case "${{ inputs.environment }}" in
+            "development")
+              echo "Deploying to development environment..."
+              # Logique de déploiement dev
+              ;;
+            "integration")
+              echo "Deploying to integration environment..."
+              # Logique de déploiement int
+              ;;
+            "production")
+              echo "Deploying to production environment..."
+              # Logique de déploiement prod
+              ;;
+            *)
+              echo "Deploying to custom environment: ${{ inputs.environment }}"
+              # Logique de déploiement personnalisé
+              ;;
+          esac
+
+      - name: Health Check
+        if: inputs.health-check-url != ''
+        run: |
+          echo "🔍 Running health check..."
+          timeout ${{ inputs.health-check-timeout }} bash -c '
+            until curl -f "${{ inputs.health-check-url }}" > /dev/null 2>&1; do
+              echo "Waiting for service to be ready..."
+              sleep 10
+            done
+            echo "✅ Health check passed"
+          '
+
+      - name: Deployment Summary
+        run: |
+          echo "✅ Deployment completed successfully"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Image: ${{ needs.build-and-push.outputs.image-tags }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"

@@ -1,0 +1,100 @@
+name: Node.js CI
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: '22.13.1'
+      test-command:
+        required: false
+        type: string
+        default: 'npm run test:coverage'
+      eslint-command:
+        required: false
+        type: string
+        default: 'npx eslint .'
+      install-command:
+        required: false
+        type: string
+        default: 'npm install'
+      fetch-depth:
+        required: false
+        type: string
+        default: '0'
+    secrets:
+      DATABASE_URL:
+        required: false
+      JWT_SECRET:
+        required: false
+      SONAR_TOKEN:
+        required: false
+
+jobs:
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ inputs.fetch-depth }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies
+        run: ${{ inputs.install-command }}
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: ${{ inputs.test-command }}
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  eslint:
+    name: ESLint Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies
+        run: ${{ inputs.install-command }}
+
+      - name: Run ESLint
+        run: ${{ inputs.eslint-command }}
+
+  test-only:
+    name: Tests Only
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SONAR_TOKEN == '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies
+        run: ${{ inputs.install-command }}
+
+      - name: Run tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: ${{ inputs.test-command }}

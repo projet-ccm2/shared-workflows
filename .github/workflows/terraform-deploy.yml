@@ -1,0 +1,111 @@
+name: Terraform Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      project_id:
+        required: true
+        type: string
+      region:
+        required: false
+        type: string
+        default: 'europe-west1'
+      zone:
+        required: false
+        type: string
+        default: 'europe-west1-a'
+      cluster_name:
+        required: true
+        type: string
+      database_url:
+        required: true
+        type: string
+      jwt_secret:
+        required: true
+        type: string
+      api_key:
+        required: true
+        type: string
+      github_owner:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      domain_name:
+        required: true
+        type: string
+      static_ip_name:
+        required: false
+        type: string
+        default: ''
+    secrets:
+      GCP_SA_KEY:
+        required: true
+
+jobs:
+  terraform-deploy:
+    name: Deploy Infrastructure with Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.6.0'
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ inputs.project_id }}
+
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials ${{ inputs.cluster_name }} --zone ${{ inputs.zone }}
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: |
+          terraform init
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: |
+          terraform plan \
+            -var="project_id=${{ inputs.project_id }}" \
+            -var="region=${{ inputs.region }}" \
+            -var="zone=${{ inputs.zone }}" \
+            -var="cluster_name=${{ inputs.cluster_name }}" \
+            -var="environment=${{ inputs.environment }}" \
+            -var="database_url=${{ inputs.database_url }}" \
+            -var="jwt_secret=${{ inputs.jwt_secret }}" \
+            -var="api_key=${{ inputs.api_key }}" \
+            -var="github_owner=${{ inputs.github_owner }}" \
+            -var="image_tag=${{ inputs.image_tag }}" \
+            -var="domain_name=${{ inputs.domain_name }}" \
+            -var="static_ip_name=${{ inputs.static_ip_name }}" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: |
+          terraform apply -auto-approve tfplan
+
+      - name: Get Cluster Info
+        run: |
+          echo "Cluster endpoint: $(terraform output -raw cluster_endpoint -state=./terraform/terraform.tfstate)"
+          echo "Namespace: $(terraform output -raw namespace -state=./terraform/terraform.tfstate)"
+          echo "Service IP: $(terraform output -raw service_ip -state=./terraform/terraform.tfstate)"
+
+      - name: Verify Deployment
+        run: |
+          kubectl get nodes
+          kubectl get namespaces
+          kubectl get pods -n user-management-${{ inputs.environment }}
+          kubectl get services -n user-management-${{ inputs.environment }}
