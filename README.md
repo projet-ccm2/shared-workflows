@@ -37,8 +37,6 @@ CI workflow for Node.js projects with support for:
 
 | Secret | Required | Description |
 |--------|----------|-------------|
-| `DATABASE_URL` | No | Database URL for tests |
-| `JWT_SECRET` | No | JWT secret for tests |
 | `SONAR_TOKEN` | No | SonarQube token (if provided, enables SonarQube analysis) |
 
 #### Jobs
@@ -90,8 +88,6 @@ jobs:
   ci:
     uses: ./.github/workflows/shared-workflows/.github/workflows/nodejs-ci.yml
     secrets:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
@@ -133,8 +129,6 @@ jobs:
       node-version: '20.0.0'
       test-command: 'npm run test:ci'
     secrets:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
@@ -149,8 +143,6 @@ jobs:
   ci:
     uses: my-org/shared-workflows/.github/workflows/nodejs-ci.yml@main
     secrets:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       # New project-specific secrets
       CUSTOM_SECRET: ${{ secrets.CUSTOM_SECRET }}
@@ -168,7 +160,6 @@ jobs:
       eslint-command: 'npm run lint'
       install-command: 'npm ci'
     secrets:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
 ```
 
