@@ -70,7 +70,7 @@ jobs:
             -Dsonar.pullrequest.github.repository.name=${{ github.event.repository.name }}
 
       - name: SonarQube Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v2
+        uses: SonarSource/sonarqube-quality-gate-action@v1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         timeout-minutes: 5
