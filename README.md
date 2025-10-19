@@ -88,6 +88,9 @@ on:
 jobs:
   ci:
     uses: ./.github/workflows/shared-workflows/.github/workflows/nodejs-ci.yml
+    permissions:
+      contents: read
+      pull-requests: write
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       GITHUB_TOKEN_SECRET: ${{ secrets.GITHUB_TOKEN }}
@@ -127,6 +130,9 @@ on:
 jobs:
   ci:
     uses: my-org/shared-workflows/.github/workflows/nodejs-ci.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
     with:
       node-version: '20.0.0'
       test-command: 'npm run test:ci'
@@ -145,6 +151,9 @@ To add project-specific secrets, simply modify the `secrets` section in your loc
 jobs:
   ci:
     uses: my-org/shared-workflows/.github/workflows/nodejs-ci.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       GITHUB_TOKEN_SECRET: ${{ secrets.GITHUB_TOKEN }}
@@ -163,6 +172,9 @@ jobs:
       test-command: 'npm run test:unit'
       eslint-command: 'npm run lint'
       install-command: 'npm ci'
+    permissions:
+      contents: read
+      pull-requests: write
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       GITHUB_TOKEN_SECRET: ${{ secrets.GITHUB_TOKEN }}
