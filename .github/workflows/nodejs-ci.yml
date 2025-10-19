@@ -26,7 +26,7 @@ on:
     secrets:
       SONAR_TOKEN:
         required: true
-      GITHUB_TOKEN:
+      GITHUB_TOKEN_SECRET:
         required: false
 
 jobs:
@@ -56,7 +56,7 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_SECRET }}
         with:
           args: >
             -Dsonar.pullrequest.key=${{ github.event.number }}
@@ -65,7 +65,7 @@ jobs:
             -Dsonar.pullrequest.provider=GitHub
             -Dsonar.pullrequest.github.repository=${{ github.repository }}
             -Dsonar.pullrequest.github.endpoint=${{ github.api_url }}
-            -Dsonar.pullrequest.github.token.secured=${{ secrets.GITHUB_TOKEN }}
+            -Dsonar.pullrequest.github.token.secured=${{ secrets.GITHUB_TOKEN_SECRET }}
 
   eslint:
     name: ESLint Check
