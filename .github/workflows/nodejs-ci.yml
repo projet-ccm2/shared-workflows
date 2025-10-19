@@ -74,8 +74,6 @@ jobs:
             -Dsonar.pullrequest.provider=GitHub
             -Dsonar.pullrequest.github.repository=${{ github.repository }}
             -Dsonar.pullrequest.github.token.secured=${{ secrets.GITHUB_TOKEN_SECRET }}
-            -Dsonar.verbose=true
-            -Dsonar.log.level=DEBUG
 
   eslint:
     name: ESLint Check
