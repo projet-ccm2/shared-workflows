@@ -68,12 +68,20 @@ CD workflow for Node.js projects with support for:
 | `docker-image-name` | string | **Yes** | - | Docker image name |
 | `docker-tag` | string | No | `latest` | Docker tag |
 | `registry-url` | string | No | `ghcr.io` | Registry URL |
+| `gcp-project-id` | string | **Yes** | - | Google Cloud Project ID |
+| `gcp-region` | string | No | `europe-west1` | Google Cloud region |
+| `cloud-run-service-name` | string | **Yes** | - | Cloud Run service name |
+| `cloud-run-port` | string | No | `8080` | Cloud Run service port |
+| `cloud-run-memory` | string | No | `512Mi` | Cloud Run memory allocation |
+| `cloud-run-cpu` | string | No | `1` | Cloud Run CPU allocation |
+| `cloud-run-max-instances` | string | No | `10` | Cloud Run max instances |
 
 #### Required Secrets
 
 | Secret | Type | Required | Description |
 |--------|------|----------|-------------|
 | `REGISTRY_TOKEN` | string | **Yes** | Registry authentication token |
+| `GCP_SA_KEY` | string | **Yes** | Google Cloud Service Account key (JSON) |
 
 ## Usage
 
@@ -118,8 +126,14 @@ jobs:
     with:
       docker-image-name: my-app
       docker-tag: latest
+      gcp-project-id: my-gcp-project
+      cloud-run-service-name: my-app-service
+      gcp-region: europe-west1
+      cloud-run-memory: 1Gi
+      cloud-run-cpu: 2
     secrets:
       REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
 ```
 
 ### In a separate repository

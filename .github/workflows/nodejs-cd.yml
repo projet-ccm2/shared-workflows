@@ -46,8 +46,36 @@ on:
         required: false
         type: string
         default: '300'
+      gcp-project-id:
+        required: true
+        type: string
+      gcp-region:
+        required: false
+        type: string
+        default: 'europe-west1'
+      cloud-run-service-name:
+        required: true
+        type: string
+      cloud-run-port:
+        required: false
+        type: string
+        default: '8080'
+      cloud-run-memory:
+        required: false
+        type: string
+        default: '512Mi'
+      cloud-run-cpu:
+        required: false
+        type: string
+        default: '1'
+      cloud-run-max-instances:
+        required: false
+        type: string
+        default: '10'
     secrets:
       REGISTRY_TOKEN:
+        required: true
+      GCP_SA_KEY:
         required: true
 
 jobs:
@@ -100,42 +128,40 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
-    name: Deploy to ${{ inputs.environment }}
+    name: Deploy to Cloud Run
     runs-on: ubuntu-latest
     needs: build-and-push
     if: always() && needs.build-and-push.result == 'success'
     steps:
-      - name: Deploy to ${{ inputs.environment }}
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ inputs.gcp-project-id }}
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Deploy to Cloud Run
         run: |
-          echo "🚀 Deploying to ${{ inputs.environment }} environment..."
+          echo "🚀 Deploying to Cloud Run..."
           echo "Image: ${{ needs.build-and-push.outputs.image-tags }}"
           echo "Digest: ${{ needs.build-and-push.outputs.image-digest }}"
           
-          # Logique de déploiement générique
-          # Ici vous pouvez ajouter votre logique de déploiement spécifique
-          # - Déploiement sur Kubernetes
-          # - Déploiement sur Docker Swarm
-          # - Déploiement sur un serveur
-          # - Déploiement sur un service cloud (AWS, Azure, GCP)
+          # Get the first tag from the image tags
+          IMAGE_TAG=$(echo "${{ needs.build-and-push.outputs.image-tags }}" | head -n1)
           
-          case "${{ inputs.environment }}" in
-            "development")
-              echo "Deploying to development environment..."
-              # Logique de déploiement dev
-              ;;
-            "integration")
-              echo "Deploying to integration environment..."
-              # Logique de déploiement int
-              ;;
-            "production")
-              echo "Deploying to production environment..."
-              # Logique de déploiement prod
-              ;;
-            *)
-              echo "Deploying to custom environment: ${{ inputs.environment }}"
-              # Logique de déploiement personnalisé
-              ;;
-          esac
+          # Deploy to Cloud Run
+          gcloud run deploy ${{ inputs.cloud-run-service-name }} \
+            --image=$IMAGE_TAG \
+            --platform=managed \
+            --region=${{ inputs.gcp-region }} \
+            --port=${{ inputs.cloud-run-port }} \
+            --memory=${{ inputs.cloud-run-memory }} \
+            --cpu=${{ inputs.cloud-run-cpu }} \
+            --max-instances=${{ inputs.cloud-run-max-instances }} \
+            --allow-unauthenticated \
+            --quiet
 
       - name: Health Check
         if: inputs.health-check-url != ''
