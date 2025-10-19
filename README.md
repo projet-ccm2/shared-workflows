@@ -32,6 +32,9 @@ CI workflow for Node.js projects with support for:
 | `eslint-command` | string | No | `npx eslint .` | Command to run ESLint |
 | `install-command` | string | No | `npm install` | Command to install dependencies |
 | `fetch-depth` | string | No | `0` | Git fetch depth |
+| `pr-number` | string | No | - | Pull request number (for SonarQube PR analysis) |
+| `pr-branch` | string | No | - | Pull request branch name (for SonarQube PR analysis) |
+| `pr-base` | string | No | - | Pull request base branch (for SonarQube PR analysis) |
 
 #### Required Secrets
 
@@ -91,6 +94,10 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    with:
+      pr-number: ${{ github.event.number }}
+      pr-branch: ${{ github.head_ref }}
+      pr-base: ${{ github.base_ref }}
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       GITHUB_TOKEN_SECRET: ${{ secrets.GITHUB_TOKEN }}
@@ -136,6 +143,9 @@ jobs:
     with:
       node-version: '20.0.0'
       test-command: 'npm run test:ci'
+      pr-number: ${{ github.event.number }}
+      pr-branch: ${{ github.head_ref }}
+      pr-base: ${{ github.base_ref }}
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       GITHUB_TOKEN_SECRET: ${{ secrets.GITHUB_TOKEN }}

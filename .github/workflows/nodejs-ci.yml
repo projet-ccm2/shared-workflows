@@ -23,6 +23,15 @@ on:
         required: false
         type: string
         default: '0'
+      pr-number:
+        required: false
+        type: string
+      pr-branch:
+        required: false
+        type: string
+      pr-base:
+        required: false
+        type: string
     secrets:
       SONAR_TOKEN:
         required: true
@@ -59,9 +68,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_SECRET }}
         with:
           args: >
-            -Dsonar.pullrequest.key=${{ github.event.number }}
-            -Dsonar.pullrequest.branch=${{ github.head_ref }}
-            -Dsonar.pullrequest.base=${{ github.base_ref }}
+            -Dsonar.pullrequest.key=${{ inputs.pr-number }}
+            -Dsonar.pullrequest.branch=${{ inputs.pr-branch }}
+            -Dsonar.pullrequest.base=${{ inputs.pr-base }}
             -Dsonar.pullrequest.provider=GitHub
             -Dsonar.pullrequest.github.repository=${{ github.repository }}
             -Dsonar.pullrequest.github.endpoint=${{ github.api_url }}
