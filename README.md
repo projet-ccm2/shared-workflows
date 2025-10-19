@@ -88,12 +88,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   ci:
     uses: ./.github/workflows/shared-workflows/.github/workflows/nodejs-ci.yml
-    permissions:
-      contents: read
-      pull-requests: write
     with:
       pr-number: ${{ github.event.number }}
       pr-branch: ${{ github.head_ref }}

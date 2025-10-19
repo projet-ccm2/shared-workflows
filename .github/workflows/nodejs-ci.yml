@@ -73,10 +73,7 @@ jobs:
             -Dsonar.pullrequest.base=${{ inputs.pr-base }}
             -Dsonar.pullrequest.provider=GitHub
             -Dsonar.pullrequest.github.repository=${{ github.repository }}
-            -Dsonar.pullrequest.github.endpoint=${{ github.api_url }}
             -Dsonar.pullrequest.github.token.secured=${{ secrets.GITHUB_TOKEN_SECRET }}
-            -Dsonar.pullrequest.github.repository.organization=${{ github.repository_owner }}
-            -Dsonar.pullrequest.github.repository.name=${{ github.event.repository.name }}
             -Dsonar.verbose=true
             -Dsonar.log.level=DEBUG
 
