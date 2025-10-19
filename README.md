@@ -38,6 +38,7 @@ CI workflow for Node.js projects with support for:
 | Secret | Required | Description |
 |--------|----------|-------------|
 | `SONAR_TOKEN` | No | SonarQube token (if provided, enables SonarQube analysis) |
+| `GITHUB_TOKEN` | No | GitHub token for SonarQube to comment on PRs (automatically provided by GitHub Actions) |
 
 #### Jobs
 
@@ -89,6 +90,7 @@ jobs:
     uses: ./.github/workflows/shared-workflows/.github/workflows/nodejs-ci.yml
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ```yaml
@@ -130,6 +132,7 @@ jobs:
       test-command: 'npm run test:ci'
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Customization
@@ -144,6 +147,7 @@ jobs:
     uses: my-org/shared-workflows/.github/workflows/nodejs-ci.yml@main
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # New project-specific secrets
       CUSTOM_SECRET: ${{ secrets.CUSTOM_SECRET }}
 ```
@@ -160,6 +164,8 @@ jobs:
       eslint-command: 'npm run lint'
       install-command: 'npm ci'
     secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
 ```
 

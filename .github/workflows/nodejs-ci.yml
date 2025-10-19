@@ -26,11 +26,16 @@ on:
     secrets:
       SONAR_TOKEN:
         required: true
+      GITHUB_TOKEN:
+        required: false
 
 jobs:
   test-and-sonar:
     name: Tests and SonarQube
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,6 +56,7 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: >
             -Dsonar.pullrequest.key=${{ github.event.number }}
@@ -58,6 +64,8 @@ jobs:
             -Dsonar.pullrequest.base=${{ github.base_ref }}
             -Dsonar.pullrequest.provider=GitHub
             -Dsonar.pullrequest.github.repository=${{ github.repository }}
+            -Dsonar.pullrequest.github.endpoint=${{ github.api_url }}
+            -Dsonar.pullrequest.github.token.secured=${{ secrets.GITHUB_TOKEN }}
 
   eslint:
     name: ESLint Check
