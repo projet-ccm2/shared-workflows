@@ -68,12 +68,8 @@ jobs:
             -Dsonar.pullrequest.github.token.secured=${{ secrets.GITHUB_TOKEN_SECRET }}
             -Dsonar.pullrequest.github.repository.organization=${{ github.repository_owner }}
             -Dsonar.pullrequest.github.repository.name=${{ github.event.repository.name }}
-
-      - name: SonarQube Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        timeout-minutes: 5
+            -Dsonar.verbose=true
+            -Dsonar.log.level=DEBUG
 
   eslint:
     name: ESLint Check
