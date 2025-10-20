@@ -147,21 +147,34 @@ jobs:
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ inputs.docker-context }}
-          file: ${{ inputs.dockerfile-path }}
-          push: true
-          tags: ${{ steps.image-info.outputs.tags }}
-          labels: |
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
-            org.opencontainers.image.description=
-            org.opencontainers.image.licenses=
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.title=${{ github.repository }}
-            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.version=${{ github.ref_name }}
+        run: |
+          # Get cleaned registry URL
+          REGISTRY_URL=$(echo "${{ inputs.registry-url }}" | sed 's:/*$::')
+          IMAGE_BASE="$REGISTRY_URL/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}"
+          
+          # Generate tags
+          BRANCH_NAME="${{ github.ref_name }}"
+          COMMIT_SHA="${{ github.sha }}"
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          
+          # Build tags array
+          TAGS="$IMAGE_BASE:$BRANCH_NAME"
+          TAGS="$TAGS,$IMAGE_BASE:$BRANCH_NAME-$SHORT_SHA"
+          
+          # Add custom tag if on default branch
+          if [[ "$BRANCH_NAME" == "${{ github.event.repository.default_branch }}" ]]; then
+            TAGS="$TAGS,$IMAGE_BASE:${{ inputs.docker-tag }}"
+          fi
+          
+          echo "Building with tags: $TAGS"
+          
+          # Build and push using docker buildx directly
+          docker buildx build \
+            --file ${{ inputs.dockerfile-path }} \
+            --push \
+            --tag $IMAGE_BASE:$BRANCH_NAME \
+            --tag $IMAGE_BASE:$BRANCH_NAME-$SHORT_SHA \
+            ${{ inputs.docker-context }}
 
   deploy:
     name: Deploy to Cloud Run
