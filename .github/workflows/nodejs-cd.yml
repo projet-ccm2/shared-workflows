@@ -72,11 +72,24 @@ on:
         required: false
         type: string
         default: '10'
-    secrets:
-      REGISTRY_TOKEN:
+      gcp-sa-key:
         required: true
-      GCP_SA_KEY:
+        type: string
+      registry-token:
         required: true
+        type: string
+      database-url:
+        required: false
+        type: string
+        default: ''
+      jwt-secret:
+        required: false
+        type: string
+        default: ''
+      api-key:
+        required: false
+        type: string
+        default: ''
 
 jobs:
   build-and-push:
@@ -104,7 +117,7 @@ jobs:
         with:
           registry: ${{ inputs.registry-url }}
           username: ${{ github.actor }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
+          password: ${{ inputs.registry-token }}
 
       - name: Extract metadata
         id: meta
@@ -136,7 +149,7 @@ jobs:
       - name: Setup Google Cloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          service_account_key: ${{ inputs.gcp-sa-key }}
           project_id: ${{ inputs.gcp-project-id }}
 
       - name: Configure Docker for GCR
@@ -151,6 +164,18 @@ jobs:
           # Get the first tag from the image tags
           IMAGE_TAG=$(echo "${{ needs.build-and-push.outputs.image-tags }}" | head -n1)
           
+          # Build environment variables string
+          ENV_VARS=""
+          if [ -n "${{ inputs.database-url }}" ]; then
+            ENV_VARS="$ENV_VARS --set-env-vars DATABASE_URL=${{ inputs.database-url }}"
+          fi
+          if [ -n "${{ inputs.jwt-secret }}" ]; then
+            ENV_VARS="$ENV_VARS --set-env-vars JWT_SECRET=${{ inputs.jwt-secret }}"
+          fi
+          if [ -n "${{ inputs.api-key }}" ]; then
+            ENV_VARS="$ENV_VARS --set-env-vars API_KEY=${{ inputs.api-key }}"
+          fi
+          
           # Deploy to Cloud Run
           gcloud run deploy ${{ inputs.cloud-run-service-name }} \
             --image=$IMAGE_TAG \
@@ -161,6 +186,7 @@ jobs:
             --cpu=${{ inputs.cloud-run-cpu }} \
             --max-instances=${{ inputs.cloud-run-max-instances }} \
             --allow-unauthenticated \
+            $ENV_VARS \
             --quiet
 
       - name: Health Check
