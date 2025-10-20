@@ -259,6 +259,13 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      - name: Verify authentication
+        run: |
+          echo "🔍 Verifying Google Cloud authentication..."
+          gcloud auth list
+          gcloud config get-value project
+          echo "✅ Authentication verified"
+
       - name: Deploy to Cloud Run
         run: |
           echo "🚀 Deploying to Cloud Run..."
