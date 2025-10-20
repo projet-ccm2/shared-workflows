@@ -116,14 +116,21 @@ jobs:
       - name: Set image path and tags
         id: image-info
         run: |
+          # Debug: Show original registry-url
+          echo "Original registry-url: '${{ inputs.registry-url }}'"
+          
           # Remove trailing slash from registry-url if present
           REGISTRY_URL="${{ inputs.registry-url }}"
           if [[ "$REGISTRY_URL" == */ ]]; then
             REGISTRY_URL="${REGISTRY_URL%/}"
+            echo "Removed trailing slash: '$REGISTRY_URL'"
+          else
+            echo "No trailing slash found: '$REGISTRY_URL'"
           fi
           
           # Build base image path
           IMAGE_BASE="$REGISTRY_URL/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}"
+          echo "Final image base: '$IMAGE_BASE'"
           echo "image-base=$IMAGE_BASE" >> $GITHUB_OUTPUT
           
           # Generate tags
