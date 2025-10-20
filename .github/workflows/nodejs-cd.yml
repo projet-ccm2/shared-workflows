@@ -112,11 +112,21 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ inputs.registry-url }}
 
+      - name: Set image path
+        id: image-path
+        run: |
+          # Remove trailing slash from registry-url if present
+          REGISTRY_URL="${{ inputs.registry-url }}"
+          if [[ "$REGISTRY_URL" == */ ]]; then
+            REGISTRY_URL="${REGISTRY_URL%/}"
+          fi
+          echo "image-path=$REGISTRY_URL/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}" >> $GITHUB_OUTPUT
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ inputs.registry-url }}/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}
+          images: ${{ steps.image-path.outputs.image-path }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
