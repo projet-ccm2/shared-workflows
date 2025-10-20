@@ -189,6 +189,15 @@ jobs:
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "Generated tags: $TAGS"
 
+      - name: Setup Google Cloud CLI for build
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ inputs.registry-url }}
+
       - name: Build and push Docker image
         id: build
         run: |
