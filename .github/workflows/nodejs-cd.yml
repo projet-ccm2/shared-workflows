@@ -88,7 +88,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
-      image-tags: ${{ steps.meta.outputs.tags }}
+      image-tags: ${{ steps.image-info.outputs.tags }}
+      image-base: ${{ steps.image-info.outputs.image-base }}
     steps:
       - uses: actions/checkout@v4
 
@@ -112,26 +113,35 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ inputs.registry-url }}
 
-      - name: Set image path
-        id: image-path
+      - name: Set image path and tags
+        id: image-info
         run: |
           # Remove trailing slash from registry-url if present
           REGISTRY_URL="${{ inputs.registry-url }}"
           if [[ "$REGISTRY_URL" == */ ]]; then
             REGISTRY_URL="${REGISTRY_URL%/}"
           fi
-          echo "image-path=$REGISTRY_URL/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}" >> $GITHUB_OUTPUT
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ steps.image-path.outputs.image-path }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=${{ inputs.docker-tag }},enable={{is_default_branch}}
+          
+          # Build base image path
+          IMAGE_BASE="$REGISTRY_URL/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}"
+          echo "image-base=$IMAGE_BASE" >> $GITHUB_OUTPUT
+          
+          # Generate tags
+          BRANCH_NAME="${{ github.ref_name }}"
+          COMMIT_SHA="${{ github.sha }}"
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          
+          # Build tags array
+          TAGS="$IMAGE_BASE:$BRANCH_NAME"
+          TAGS="$TAGS,$IMAGE_BASE:$BRANCH_NAME-$SHORT_SHA"
+          
+          # Add custom tag if on default branch
+          if [[ "$BRANCH_NAME" == "${{ github.event.repository.default_branch }}" ]]; then
+            TAGS="$TAGS,$IMAGE_BASE:${{ inputs.docker-tag }}"
+          fi
+          
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "Generated tags: $TAGS"
 
       - name: Build and push Docker image
         id: build
@@ -140,8 +150,16 @@ jobs:
           context: ${{ inputs.docker-context }}
           file: ${{ inputs.dockerfile-path }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.image-info.outputs.tags }}
+          labels: |
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.description=
+            org.opencontainers.image.licenses=
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.title=${{ github.repository }}
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ github.ref_name }}
 
   deploy:
     name: Deploy to Cloud Run
