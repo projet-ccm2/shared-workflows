@@ -81,6 +81,8 @@ on:
         required: true
       DATABASE_URL:
         required: false
+      TWITCH_CLIENT_ID:
+        required: true
 
 jobs:
   build-and-push:
@@ -153,9 +155,6 @@ jobs:
         with:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ inputs.registry-url }}
 
       - name: Set image path and tags
         id: image-info
@@ -277,10 +276,23 @@ jobs:
           
           echo "Image: $IMAGE_TAG"
           
+          # Debug Environment Variables
+          echo "🔍 Environment variables to be set:"
+          echo "NODE_ENV=production"
+          if [ -n "${{ secrets.DATABASE_URL }}" ]; then
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
+          fi
+          if [ -n "${{ secrets.TWITCH_CLIENT_ID }}" ]; then
+            echo "TWITCH_CLIENT_ID=${{ secrets.TWITCH_CLIENT_ID }}"
+          fi
+          
           # Build environment variables string
-          ENV_VARS=""
+          ENV_VARS="--set-env-vars NODE_ENV=production"
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
             ENV_VARS="$ENV_VARS --set-env-vars DATABASE_URL=${{ secrets.DATABASE_URL }}"
+          fi
+          if [ -n "${{ secrets.TWITCH_CLIENT_ID }}" ]; then
+            ENV_VARS="$ENV_VARS --set-env-vars TWITCH_CLIENT_ID=${{ secrets.TWITCH_CLIENT_ID }}"
           fi
           
           # Deploy to Cloud Run
