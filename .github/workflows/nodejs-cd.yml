@@ -269,11 +269,13 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           echo "🚀 Deploying to Cloud Run..."
-          echo "Image: ${{ needs.build-and-push.outputs.image-tags }}"
-          echo "Digest: ${{ needs.build-and-push.outputs.image-digest }}"
           
-          # Get the first tag from the image tags
-          IMAGE_TAG=$(echo "${{ needs.build-and-push.outputs.image-tags }}" | head -n1)
+          # Build image path
+          REGISTRY_URL=$(echo "${{ inputs.registry-url }}" | sed 's:/*$::')
+          BRANCH_NAME="${{ github.ref_name }}"
+          IMAGE_TAG="$REGISTRY_URL/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}:$BRANCH_NAME"
+          
+          echo "Image: $IMAGE_TAG"
           
           # Build environment variables string
           ENV_VARS=""
