@@ -148,9 +148,18 @@ jobs:
       - name: Build and push Docker image
         id: build
         run: |
+          echo "=== DEBUG INFO ==="
+          echo "Original registry-url: '${{ inputs.registry-url }}'"
+          echo "GCP_PROJECT_ID: '${{ secrets.GCP_PROJECT_ID }}'"
+          echo "artifact-registry-repository: '${{ inputs.artifact-registry-repository }}'"
+          echo "docker-image-name: '${{ inputs.docker-image-name }}'"
+          
           # Get cleaned registry URL
           REGISTRY_URL=$(echo "${{ inputs.registry-url }}" | sed 's:/*$::')
+          echo "Cleaned registry-url: '$REGISTRY_URL'"
+          
           IMAGE_BASE="$REGISTRY_URL/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.artifact-registry-repository }}/${{ inputs.docker-image-name }}"
+          echo "Final image base: '$IMAGE_BASE'"
           
           # Generate tags
           BRANCH_NAME="${{ github.ref_name }}"
@@ -167,6 +176,7 @@ jobs:
           fi
           
           echo "Building with tags: $TAGS"
+          echo "=================="
           
           # Build and push using docker buildx directly
           docker buildx build \
