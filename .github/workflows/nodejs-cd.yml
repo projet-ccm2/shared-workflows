@@ -72,6 +72,10 @@ on:
       artifact-registry-repository:
         required: true
         type: string
+      node-env:
+        required: false
+        type: string
+        default: 'production'
     secrets:
       GCP_SA_KEY:
         required: true
@@ -278,7 +282,7 @@ jobs:
           
           # Debug Environment Variables
           echo "🔍 Environment variables to be set:"
-          echo "NODE_ENV=production"
+          echo "NODE_ENV=${{ inputs.node-env }}"
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
           fi
@@ -287,7 +291,7 @@ jobs:
           fi
           
           # Build environment variables string
-          ENV_VARS="--set-env-vars NODE_ENV=production"
+          ENV_VARS="--set-env-vars NODE_ENV=${{ inputs.node-env }}"
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
             ENV_VARS="$ENV_VARS --set-env-vars DATABASE_URL=${{ secrets.DATABASE_URL }}"
           fi
