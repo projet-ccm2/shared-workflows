@@ -93,6 +93,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate required parameters
+        run: |
+          echo "=== PARAMETER VALIDATION ==="
+          ERRORS=()
+          
+          if [ -z "${{ inputs.registry-url }}" ]; then
+            ERRORS+=("❌ registry-url is required")
+          fi
+          
+          if [ -z "${{ secrets.GCP_PROJECT_ID }}" ]; then
+            ERRORS+=("❌ GCP_PROJECT_ID is required in secrets")
+          fi
+          
+          if [ -z "${{ inputs.artifact-registry-repository }}" ]; then
+            ERRORS+=("❌ artifact-registry-repository is required")
+          fi
+          
+          if [ -z "${{ inputs.docker-image-name }}" ]; then
+            ERRORS+=("❌ docker-image-name is required")
+          fi
+          
+          if [ -z "${{ inputs.dockerfile-path }}" ]; then
+            ERRORS+=("❌ dockerfile-path is required")
+          fi
+          
+          if [ -z "${{ inputs.docker-context }}" ]; then
+            ERRORS+=("❌ docker-context is required")
+          fi
+          
+          # Display errors and stop if necessary
+          if [ ${#ERRORS[@]} -gt 0 ]; then
+            echo "🚨 ERRORS DETECTED:"
+            for error in "${ERRORS[@]}"; do
+              echo "  $error"
+            done
+            echo ""
+            echo "💡 Please ensure all required parameters are provided in your deployment workflow."
+            echo "   Check the reusable workflow documentation for the complete parameter list."
+            exit 1
+          fi
+          
+          echo "✅ All required parameters are present"
+          echo "====================================="
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -148,7 +192,7 @@ jobs:
       - name: Build and push Docker image
         id: build
         run: |
-          echo "=== DEBUG INFO ==="
+          echo "=== BUILD INFO ==="
           echo "Original registry-url: '${{ inputs.registry-url }}'"
           echo "GCP_PROJECT_ID: '${{ secrets.GCP_PROJECT_ID }}'"
           echo "artifact-registry-repository: '${{ inputs.artifact-registry-repository }}'"
