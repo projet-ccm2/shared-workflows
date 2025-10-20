@@ -77,6 +77,10 @@ on:
         required: true
       REGISTRY_TOKEN:
         required: true
+      GCP_PROJECT_ID:
+        required: true
+      HEALTH_CHECK_URL:
+        required: true
       DATABASE_URL:
         required: false
 
@@ -139,7 +143,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
-          project_id: ${{ inputs.gcp-project-id }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
@@ -173,16 +177,19 @@ jobs:
             --quiet
 
       - name: Health Check
-        if: inputs.health-check-url != ''
         run: |
-          echo "🔍 Running health check..."
-          timeout ${{ inputs.health-check-timeout }} bash -c '
-            until curl -f "${{ inputs.health-check-url }}" > /dev/null 2>&1; do
-              echo "Waiting for service to be ready..."
-              sleep 10
-            done
-            echo "✅ Health check passed"
-          '
+          if [ -n "${{ secrets.HEALTH_CHECK_URL }}" ]; then
+            echo "🔍 Running health check..."
+            timeout ${{ inputs.health-check-timeout }} bash -c '
+              until curl -f "${{ secrets.HEALTH_CHECK_URL }}" > /dev/null 2>&1; do
+                echo "Waiting for service to be ready..."
+                sleep 10
+              done
+              echo "✅ Health check passed"
+            '
+          else
+            echo "⚠️ No health check URL provided, skipping health check"
+          fi
 
       - name: Deployment Summary
         run: |
