@@ -334,7 +334,6 @@ jobs:
             echo "🔍 Running health check..."
             
             # Get the Cloud Run service URL
-            echo "Getting Cloud Run service URL..."
             SERVICE_URL=$(gcloud run services describe ${{ inputs.cloud-run-service-name }} \
               --region=${{ inputs.gcp-region }} \
               --format="value(status.url)")
@@ -346,18 +345,15 @@ jobs:
             
             # Build the complete health check URL
             HEALTH_CHECK_URL="$SERVICE_URL${{ inputs.health-check-url }}"
-            echo "Service URL: $SERVICE_URL"
-            echo "Health check route: ${{ inputs.health-check-url }}"
-            echo "Full health check URL: $HEALTH_CHECK_URL"
+            echo "Health check URL: $HEALTH_CHECK_URL"
             
-            # Test the URL with verbose output first
-            echo "Testing health check URL..."
-            if curl -v "$HEALTH_CHECK_URL" 2>&1; then
-              echo "✅ Health check passed immediately"
+            # Test the URL
+            if curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
+              echo "✅ Health check passed"
             else
               echo "⏳ Service not ready yet, waiting..."
               timeout ${{ inputs.health-check-timeout }} bash -c '
-                until curl -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
+                until curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
                   echo "Waiting for service to be ready..."
                   sleep 10
                 done
