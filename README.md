@@ -55,6 +55,9 @@ CD workflow for Node.js projects with support for:
 - Application build
 - Docker image construction
 - Push to registry
+- Automatic Artifact Registry repository creation
+- Cloud Run deployment
+- Health check validation
 
 #### Input Parameters
 
@@ -78,6 +81,14 @@ CD workflow for Node.js projects with support for:
 | `cloud-run-cpu` | string | No | `1` | Cloud Run CPU allocation |
 | `cloud-run-max-instances` | string | No | `10` | Cloud Run max instances |
 | `artifact-registry-repository` | string | **Yes** | - | Artifact Registry repository name |
+
+#### Features
+
+- **Automatic Artifact Registry Management**: The workflow automatically checks if the specified Artifact Registry repository exists and creates it if it doesn't exist
+- **Parameter Validation**: Comprehensive validation of all required inputs and secrets before deployment
+- **Health Check**: Optional health check validation after deployment
+- **Environment Variables**: Automatic injection of environment variables (NODE_ENV, DATABASE_URL, TWITCH_CLIENT_ID)
+- **Multi-tag Support**: Automatic generation of multiple Docker tags (branch, commit-sha, custom tag)
 
 #### Required Secrets
 
@@ -250,3 +261,6 @@ uses: my-org/shared-workflows/.github/workflows/nodejs-ci.yml@main
 - ✅ **Flexibility** : Customization possible per project
 - ✅ **Maintenance** : Centralized updates
 - ✅ **Reusability** : Easy to share between teams
+- ✅ **Infrastructure Management** : Automatic creation of required GCP resources
+- ✅ **Validation** : Comprehensive parameter and secret validation
+- ✅ **Health Monitoring** : Built-in health check validation

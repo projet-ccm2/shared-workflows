@@ -203,6 +203,25 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      - name: Check and create Artifact Registry repository
+        run: |
+          echo "🔍 Checking Artifact Registry repository..."
+          
+          # Check if the repository exists
+          if gcloud artifacts repositories describe ${{ inputs.artifact-registry-repository }} \
+            --location=${{ inputs.gcp-region }} \
+            --format="value(name)" > /dev/null 2>&1; then
+            echo "✅ Artifact Registry repository '${{ inputs.artifact-registry-repository }}' already exists"
+          else
+            echo "📦 Creating Artifact Registry repository '${{ inputs.artifact-registry-repository }}'..."
+            gcloud artifacts repositories create ${{ inputs.artifact-registry-repository }} \
+              --repository-format=docker \
+              --location=${{ inputs.gcp-region }} \
+              --description="Docker repository for ${{ inputs.docker-image-name }}" \
+              --quiet
+            echo "✅ Artifact Registry repository created successfully"
+          fi
+
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ inputs.registry-url }}
 
