@@ -40,7 +40,7 @@ on:
       health-check-url:
         required: false
         type: string
-        default: ''
+        default: '/health'
       health-check-timeout:
         required: false
         type: string
@@ -75,8 +75,6 @@ on:
       GCP_SA_KEY:
         required: true
       GCP_PROJECT_ID:
-        required: true
-      HEALTH_CHECK_URL:
         required: true
       DATABASE_URL:
         required: false
@@ -125,9 +123,6 @@ jobs:
             ERRORS+=("❌ GCP_PROJECT_ID is required in secrets")
           fi
           
-          if [ -z "${{ secrets.HEALTH_CHECK_URL }}" ]; then
-            ERRORS+=("❌ HEALTH_CHECK_URL is required in secrets")
-          fi
           
           # Display errors and stop if necessary
           if [ ${#ERRORS[@]} -gt 0 ]; then
@@ -335,17 +330,27 @@ jobs:
 
       - name: Health Check
         run: |
-          if [ -n "${{ secrets.HEALTH_CHECK_URL }}" ]; then
+          if [ -n "${{ inputs.health-check-url }}" ]; then
             echo "🔍 Running health check..."
+            
+            # Get the Cloud Run service URL
+            SERVICE_URL=$(gcloud run services describe ${{ inputs.cloud-run-service-name }} \
+              --region=${{ inputs.gcp-region }} \
+              --format="value(status.url)")
+            
+            # Build the complete health check URL
+            HEALTH_CHECK_URL="$SERVICE_URL${{ inputs.health-check-url }}"
+            echo "Health check URL: $HEALTH_CHECK_URL"
+            
             timeout ${{ inputs.health-check-timeout }} bash -c '
-              until curl -f "${{ secrets.HEALTH_CHECK_URL }}" > /dev/null 2>&1; do
+              until curl -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
                 echo "Waiting for service to be ready..."
                 sleep 10
               done
               echo "✅ Health check passed"
             '
           else
-            echo "⚠️ No health check URL provided, skipping health check"
+            echo "⚠️ No health check route provided, skipping health check"
           fi
 
       - name: Deployment Summary

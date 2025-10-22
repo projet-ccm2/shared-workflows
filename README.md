@@ -72,7 +72,7 @@ CD workflow for Node.js projects with support for:
 | `docker-tag` | string | No | `latest` | Docker tag |
 | `registry-url` | string | No | `europe-west1-docker.pkg.dev` | Registry URL |
 | `environment` | string | **Yes** | - | Environment (dev, staging, prod) |
-| `health-check-url` | string | No | `''` | Health check URL |
+| `health-check-url` | string | No | `/health` | Health check route (e.g., `/health`, `/api/health`) - URL is auto-generated from Cloud Run service |
 | `health-check-timeout` | string | No | `300` | Health check timeout in seconds |
 | `gcp-region` | string | No | `europe-west1` | Google Cloud region |
 | `cloud-run-service-name` | string | **Yes** | - | Cloud Run service name |
@@ -86,7 +86,7 @@ CD workflow for Node.js projects with support for:
 
 - **Automatic Artifact Registry Management**: The workflow automatically checks if the specified Artifact Registry repository exists and creates it if it doesn't exist
 - **Parameter Validation**: Comprehensive validation of all required inputs and secrets before deployment
-- **Health Check**: Optional health check validation after deployment
+- **Health Check**: Optional health check validation after deployment using auto-generated URL
 - **Environment Variables**: Automatic injection of environment variables (NODE_ENV, DATABASE_URL, TWITCH_CLIENT_ID)
 - **Multi-tag Support**: Automatic generation of multiple Docker tags (branch, commit-sha, custom tag)
 
@@ -96,7 +96,6 @@ CD workflow for Node.js projects with support for:
 |--------|------|----------|-------------|
 | `GCP_SA_KEY` | string | **Yes** | Google Cloud Service Account key (JSON) |
 | `GCP_PROJECT_ID` | string | **Yes** | Google Cloud Project ID |
-| `HEALTH_CHECK_URL` | string | **Yes** | Health check URL for the deployed service |
 | `DATABASE_URL` | string | No | Database connection URL (optional) |
 | `TWITCH_CLIENT_ID` | string | No | Twitch API client ID (optional) |
 
@@ -149,11 +148,10 @@ jobs:
       gcp-region: europe-west1
       cloud-run-memory: 1Gi
       cloud-run-cpu: 2
-      health-check-url: https://my-app.example.com/health
+      health-check-url: /health
     secrets:
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      HEALTH_CHECK_URL: ${{ secrets.HEALTH_CHECK_URL }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
 ```
