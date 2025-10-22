@@ -67,21 +67,27 @@ CD workflow for Node.js projects with support for:
 | `docker-context` | string | No | `.` | Docker context |
 | `docker-image-name` | string | **Yes** | - | Docker image name |
 | `docker-tag` | string | No | `latest` | Docker tag |
-| `registry-url` | string | No | `ghcr.io` | Registry URL |
-| `gcp-project-id` | string | **Yes** | - | Google Cloud Project ID |
+| `registry-url` | string | No | `europe-west1-docker.pkg.dev` | Registry URL |
+| `environment` | string | **Yes** | - | Environment (dev, staging, prod) |
+| `health-check-url` | string | No | `''` | Health check URL |
+| `health-check-timeout` | string | No | `300` | Health check timeout in seconds |
 | `gcp-region` | string | No | `europe-west1` | Google Cloud region |
 | `cloud-run-service-name` | string | **Yes** | - | Cloud Run service name |
-| `cloud-run-port` | string | No | `8080` | Cloud Run service port |
+| `cloud-run-port` | string | No | `3000` | Cloud Run service port |
 | `cloud-run-memory` | string | No | `512Mi` | Cloud Run memory allocation |
 | `cloud-run-cpu` | string | No | `1` | Cloud Run CPU allocation |
 | `cloud-run-max-instances` | string | No | `10` | Cloud Run max instances |
+| `artifact-registry-repository` | string | **Yes** | - | Artifact Registry repository name |
 
 #### Required Secrets
 
 | Secret | Type | Required | Description |
 |--------|------|----------|-------------|
-| `REGISTRY_TOKEN` | string | **Yes** | Registry authentication token |
 | `GCP_SA_KEY` | string | **Yes** | Google Cloud Service Account key (JSON) |
+| `GCP_PROJECT_ID` | string | **Yes** | Google Cloud Project ID |
+| `HEALTH_CHECK_URL` | string | **Yes** | Health check URL for the deployed service |
+| `DATABASE_URL` | string | No | Database connection URL (optional) |
+| `TWITCH_CLIENT_ID` | string | No | Twitch API client ID (optional) |
 
 ## Usage
 
@@ -126,14 +132,19 @@ jobs:
     with:
       docker-image-name: my-app
       docker-tag: latest
-      gcp-project-id: my-gcp-project
+      environment: production
+      artifact-registry-repository: my-repo
       cloud-run-service-name: my-app-service
       gcp-region: europe-west1
       cloud-run-memory: 1Gi
       cloud-run-cpu: 2
+      health-check-url: https://my-app.example.com/health
     secrets:
-      REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      HEALTH_CHECK_URL: ${{ secrets.HEALTH_CHECK_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
 ```
 
 ### In a separate repository
