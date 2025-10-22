@@ -44,7 +44,7 @@ on:
       health-check-timeout:
         required: false
         type: string
-        default: '300'
+        default: '60'
       gcp-region:
         required: false
         type: string
