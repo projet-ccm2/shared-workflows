@@ -320,14 +320,18 @@ jobs:
           fi
           
           
+          # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
+          GCP_SA_KEY_FILE=$(mktemp)
+          echo "${{ secrets.GCP_SA_KEY }}" > "$GCP_SA_KEY_FILE"
+          
           # Create temporary JSON file for environment variables using jq
           ENV_FILE=$(mktemp)
           
-          # Build JSON object with jq (only include non-empty values)
+          # Build JSON object with jq
           jq -n \
             --arg node_env "${{ inputs.environment }}" \
             --arg gcp_project_id "${{ secrets.GCP_PROJECT_ID }}" \
-            --arg gcp_sa_key "${{ secrets.GCP_SA_KEY }}" \
+            --rawfile gcp_sa_key_content "$GCP_SA_KEY_FILE" \
             --arg database_url "${{ secrets.DATABASE_URL }}" \
             --arg twitch_client_id "${{ secrets.TWITCH_CLIENT_ID }}" \
             --arg gcp_bucket_name "${{ secrets.GCP_BUCKET_NAME }}" \
@@ -336,11 +340,14 @@ jobs:
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
             } 
-            | if ($gcp_sa_key | length) > 0 then . + {GCP_SA_KEY: $gcp_sa_key} else . end
+            | if ($gcp_sa_key_content | length) > 0 then . + {GCP_SA_KEY: $gcp_sa_key_content} else . end
             | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
             | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
             | if ($gcp_bucket_name | length) > 0 then . + {GCP_BUCKET_NAME: $gcp_bucket_name} else . end
             | if ($allowed_origins | length) > 0 then . + {ALLOWED_ORIGINS: $allowed_origins} else . end' > "$ENV_FILE"
+          
+          # Clean up temporary file for GCP_SA_KEY
+          rm -f "$GCP_SA_KEY_FILE"
           
           # Debug: Show the generated JSON
           echo "📄 Generated JSON file content:"
