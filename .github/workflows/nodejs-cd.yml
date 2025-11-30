@@ -289,6 +289,8 @@ jobs:
           echo "✅ Authentication verified"
 
       - name: Deploy to Cloud Run
+        env:
+          GCP_SA_KEY_ENV: ${{ secrets.GCP_SA_KEY }}
         run: |
           echo "🚀 Deploying to Cloud Run..."
           
@@ -304,9 +306,8 @@ jobs:
           echo "NODE_ENV=${{ inputs.environment }}"
           echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
           
-          # Check if GCP_SA_KEY is set (store in variable to avoid syntax issues)
-          GCP_SA_KEY_VALUE="${{ secrets.GCP_SA_KEY }}"
-          if [ -n "$GCP_SA_KEY_VALUE" ]; then
+          # Check if GCP_SA_KEY is set
+          if [ -n "$GCP_SA_KEY_ENV" ]; then
             echo "✅ GCP_SA_KEY=[REDACTED - secret present]"
           else
             echo "⚠️ GCP_SA_KEY secret is empty or not set in the reusable workflow"
@@ -329,8 +330,9 @@ jobs:
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
           GCP_SA_KEY_FILE=$(mktemp)
-          if [ -n "$GCP_SA_KEY_VALUE" ]; then
-            echo -n "$GCP_SA_KEY_VALUE" > "$GCP_SA_KEY_FILE"
+          if [ -n "$GCP_SA_KEY_ENV" ]; then
+            # Write secret from environment variable to file using printf
+            printf '%s' "$GCP_SA_KEY_ENV" > "$GCP_SA_KEY_FILE"
             echo "✅ GCP_SA_KEY secret is present and written to temporary file"
             echo "📏 GCP_SA_KEY file size: $(wc -c < "$GCP_SA_KEY_FILE") bytes"
           else
