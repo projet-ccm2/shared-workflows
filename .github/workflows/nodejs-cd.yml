@@ -319,7 +319,7 @@ jobs:
           # Create temporary JSON file for environment variables using jq
           ENV_FILE=$(mktemp)
           
-          # Build JSON object with jq
+          # Build JSON object with jq (only include non-empty values)
           jq -n \
             --arg node_env "${{ inputs.environment }}" \
             --arg database_url "${{ secrets.DATABASE_URL }}" \
@@ -327,12 +327,23 @@ jobs:
             --arg gcp_bucket_name "${{ secrets.GCP_BUCKET_NAME }}" \
             --arg allowed_origins "${{ secrets.ALLOWED_ORIGINS }}" \
             '{
-              NODE_ENV: $node_env,
-              DATABASE_URL: (if $database_url != "" then $database_url else empty end),
-              TWITCH_CLIENT_ID: (if $twitch_client_id != "" then $twitch_client_id else empty end),
-              GCP_BUCKET_NAME: (if $gcp_bucket_name != "" then $gcp_bucket_name else empty end),
-              ALLOWED_ORIGINS: (if $allowed_origins != "" then $allowed_origins else empty end)
-            } | with_entries(select(.value != null))' > "$ENV_FILE"
+              NODE_ENV: $node_env
+            } 
+            | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
+            | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
+            | if ($gcp_bucket_name | length) > 0 then . + {GCP_BUCKET_NAME: $gcp_bucket_name} else . end
+            | if ($allowed_origins | length) > 0 then . + {ALLOWED_ORIGINS: $allowed_origins} else . end' > "$ENV_FILE"
+          
+          # Debug: Show the generated JSON
+          echo "📄 Generated JSON file content:"
+          cat "$ENV_FILE"
+          echo ""
+          
+          # Validate JSON
+          if ! jq empty "$ENV_FILE" 2>/dev/null; then
+            echo "❌ Error: Generated JSON is invalid"
+            exit 1
+          fi
           
           # Deploy to Cloud Run
           gcloud run deploy ${{ inputs.cloud-run-service-name }} \
