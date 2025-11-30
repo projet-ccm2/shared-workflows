@@ -322,7 +322,7 @@ jobs:
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
           GCP_SA_KEY_FILE=$(mktemp)
-          echo "${{ secrets.GCP_SA_KEY }}" > "$GCP_SA_KEY_FILE"
+          echo -n "${{ secrets.GCP_SA_KEY }}" > "$GCP_SA_KEY_FILE"
           
           # Create temporary JSON file for environment variables using jq
           ENV_FILE=$(mktemp)
@@ -340,7 +340,7 @@ jobs:
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
             } 
-            | if ($gcp_sa_key_content | length) > 0 then . + {GCP_SA_KEY: $gcp_sa_key_content} else . end
+            | if ($gcp_sa_key_content | length) > 0 then . + {GCP_SA_KEY: ($gcp_sa_key_content | rtrimstr("\n"))} else . end
             | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
             | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
             | if ($gcp_bucket_name | length) > 0 then . + {GCP_BUCKET_NAME: $gcp_bucket_name} else . end
