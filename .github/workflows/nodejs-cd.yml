@@ -303,6 +303,9 @@ jobs:
           echo "🔍 Environment variables to be set:"
           echo "NODE_ENV=${{ inputs.environment }}"
           echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
+          if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "GCP_SA_KEY=[REDACTED - secret present]"
+          fi
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
           fi
@@ -324,6 +327,7 @@ jobs:
           jq -n \
             --arg node_env "${{ inputs.environment }}" \
             --arg gcp_project_id "${{ secrets.GCP_PROJECT_ID }}" \
+            --arg gcp_sa_key "${{ secrets.GCP_SA_KEY }}" \
             --arg database_url "${{ secrets.DATABASE_URL }}" \
             --arg twitch_client_id "${{ secrets.TWITCH_CLIENT_ID }}" \
             --arg gcp_bucket_name "${{ secrets.GCP_BUCKET_NAME }}" \
@@ -332,6 +336,7 @@ jobs:
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
             } 
+            | if ($gcp_sa_key | length) > 0 then . + {GCP_SA_KEY: $gcp_sa_key} else . end
             | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
             | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
             | if ($gcp_bucket_name | length) > 0 then . + {GCP_BUCKET_NAME: $gcp_bucket_name} else . end
