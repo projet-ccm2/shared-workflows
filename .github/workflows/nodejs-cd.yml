@@ -303,7 +303,10 @@ jobs:
           echo "🔍 Environment variables to be set:"
           echo "NODE_ENV=${{ inputs.environment }}"
           echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
-          if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
+          
+          # Check if GCP_SA_KEY is set (store in variable to avoid syntax issues)
+          GCP_SA_KEY_VALUE="${{ secrets.GCP_SA_KEY }}"
+          if [ -n "$GCP_SA_KEY_VALUE" ]; then
             echo "✅ GCP_SA_KEY=[REDACTED - secret present]"
           else
             echo "⚠️ GCP_SA_KEY secret is empty or not set in the reusable workflow"
@@ -326,8 +329,8 @@ jobs:
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
           GCP_SA_KEY_FILE=$(mktemp)
-          if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
-            echo -n "${{ secrets.GCP_SA_KEY }}" > "$GCP_SA_KEY_FILE"
+          if [ -n "$GCP_SA_KEY_VALUE" ]; then
+            echo -n "$GCP_SA_KEY_VALUE" > "$GCP_SA_KEY_FILE"
             echo "✅ GCP_SA_KEY secret is present and written to temporary file"
             echo "📏 GCP_SA_KEY file size: $(wc -c < "$GCP_SA_KEY_FILE") bytes"
           else
