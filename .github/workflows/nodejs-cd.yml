@@ -302,6 +302,7 @@ jobs:
           # Debug Environment Variables
           echo "🔍 Environment variables to be set:"
           echo "NODE_ENV=${{ inputs.environment }}"
+          echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
           fi
@@ -322,12 +323,14 @@ jobs:
           # Build JSON object with jq (only include non-empty values)
           jq -n \
             --arg node_env "${{ inputs.environment }}" \
+            --arg gcp_project_id "${{ secrets.GCP_PROJECT_ID }}" \
             --arg database_url "${{ secrets.DATABASE_URL }}" \
             --arg twitch_client_id "${{ secrets.TWITCH_CLIENT_ID }}" \
             --arg gcp_bucket_name "${{ secrets.GCP_BUCKET_NAME }}" \
             --arg allowed_origins "${{ secrets.ALLOWED_ORIGINS }}" \
             '{
-              NODE_ENV: $node_env
+              NODE_ENV: $node_env,
+              GCP_PROJECT_ID: $gcp_project_id
             } 
             | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
             | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
