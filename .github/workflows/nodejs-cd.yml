@@ -316,26 +316,24 @@ jobs:
           fi
           
           
-          # Build environment variables array
-          ENV_VARS_ARGS=(
-            "--set-env-vars"
-            "NODE_ENV=${{ inputs.environment }}"
-          )
+          # Create temporary file for environment variables
+          ENV_FILE=$(mktemp)
+          echo "NODE_ENV=${{ inputs.environment }}" > "$ENV_FILE"
           
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
-            ENV_VARS_ARGS+=("--set-env-vars" "DATABASE_URL=${{ secrets.DATABASE_URL }}")
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> "$ENV_FILE"
           fi
           
           if [ -n "${{ secrets.TWITCH_CLIENT_ID }}" ]; then
-            ENV_VARS_ARGS+=("--set-env-vars" "TWITCH_CLIENT_ID=${{ secrets.TWITCH_CLIENT_ID }}")
+            echo "TWITCH_CLIENT_ID=${{ secrets.TWITCH_CLIENT_ID }}" >> "$ENV_FILE"
           fi
           
           if [ -n "${{ secrets.GCP_BUCKET_NAME }}" ]; then
-            ENV_VARS_ARGS+=("--set-env-vars" "GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }}")
+            echo "GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }}" >> "$ENV_FILE"
           fi
           
           if [ -n "${{ secrets.ALLOWED_ORIGINS }}" ]; then
-            ENV_VARS_ARGS+=("--set-env-vars" "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}")
+            echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" >> "$ENV_FILE"
           fi
           
           # Deploy to Cloud Run
@@ -349,8 +347,11 @@ jobs:
             --max-instances=${{ inputs.cloud-run-max-instances }} \
             --timeout=900 \
             --allow-unauthenticated \
-            "${ENV_VARS_ARGS[@]}" \
+            --env-vars-file="$ENV_FILE" \
             --quiet
+          
+          # Clean up temporary file
+          rm -f "$ENV_FILE"
 
       - name: Health Check
         run: |
