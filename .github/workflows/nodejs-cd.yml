@@ -304,7 +304,11 @@ jobs:
           echo "NODE_ENV=${{ inputs.environment }}"
           echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
           if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
-            echo "GCP_SA_KEY=[REDACTED - secret present]"
+            echo "✅ GCP_SA_KEY=[REDACTED - secret present]"
+          else
+            echo "⚠️ GCP_SA_KEY secret is empty or not set in the reusable workflow"
+            echo "💡 Make sure DEV_GCP_SA_KEY is defined in the calling repository's secrets"
+            echo "💡 And that it's passed correctly: secrets: GCP_SA_KEY: \${{ secrets.DEV_GCP_SA_KEY }}"
           fi
           if [ -n "${{ secrets.DATABASE_URL }}" ]; then
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
