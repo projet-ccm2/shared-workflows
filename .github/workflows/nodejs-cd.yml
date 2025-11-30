@@ -322,7 +322,9 @@ jobs:
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
           GCP_SA_KEY_FILE=$(mktemp)
-          echo -n "${{ secrets.GCP_SA_KEY }}" > "$GCP_SA_KEY_FILE"
+          if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo -n "${{ secrets.GCP_SA_KEY }}" > "$GCP_SA_KEY_FILE"
+          fi
           
           # Create temporary JSON file for environment variables using jq
           ENV_FILE=$(mktemp)
