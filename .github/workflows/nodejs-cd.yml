@@ -324,6 +324,11 @@ jobs:
           GCP_SA_KEY_FILE=$(mktemp)
           if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
             echo -n "${{ secrets.GCP_SA_KEY }}" > "$GCP_SA_KEY_FILE"
+            echo "✅ GCP_SA_KEY secret is present and written to temporary file"
+            echo "📏 GCP_SA_KEY file size: $(wc -c < "$GCP_SA_KEY_FILE") bytes"
+          else
+            echo "⚠️ GCP_SA_KEY secret is empty or not set"
+            touch "$GCP_SA_KEY_FILE"
           fi
           
           # Create temporary JSON file for environment variables using jq
