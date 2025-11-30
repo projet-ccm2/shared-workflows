@@ -361,6 +361,15 @@ jobs:
           cat "$ENV_FILE"
           echo ""
           
+          # Check if GCP_SA_KEY is in the JSON
+          if jq -e '.GCP_SA_KEY' "$ENV_FILE" > /dev/null 2>&1; then
+            echo "✅ GCP_SA_KEY is present in the JSON file"
+            echo "📏 GCP_SA_KEY length: $(jq -r '.GCP_SA_KEY | length' "$ENV_FILE") characters"
+          else
+            echo "⚠️ GCP_SA_KEY is NOT present in the JSON file"
+            echo "🔍 Available keys in JSON: $(jq -r 'keys | join(", ")' "$ENV_FILE")"
+          fi
+          
           # Validate JSON
           if ! jq empty "$ENV_FILE" 2>/dev/null; then
             echo "❌ Error: Generated JSON is invalid"
