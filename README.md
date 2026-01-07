@@ -73,7 +73,7 @@ CD workflow for Node.js projects with support for:
 | `registry-url` | string | No | `europe-west1-docker.pkg.dev` | Registry URL |
 | `environment` | string | **Yes** | - | Environment (dev, staging, prod) |
 | `health-check-url` | string | No | `/health` | Health check route (e.g., `/health`, `/api/health`) - URL is auto-generated from Cloud Run service |
-| `health-check-timeout` | string | No | `300` | Health check timeout in seconds |
+| `health-check-timeout` | string | No | `60` | Health check timeout in seconds |
 | `gcp-region` | string | No | `europe-west1` | Google Cloud region |
 | `cloud-run-service-name` | string | **Yes** | - | Cloud Run service name |
 | `cloud-run-port` | string | No | `3000` | Cloud Run service port |
@@ -87,17 +87,27 @@ CD workflow for Node.js projects with support for:
 - **Automatic Artifact Registry Management**: The workflow automatically checks if the specified Artifact Registry repository exists and creates it if it doesn't exist
 - **Parameter Validation**: Comprehensive validation of all required inputs and secrets before deployment
 - **Health Check**: Optional health check validation after deployment using auto-generated URL
-- **Environment Variables**: Automatic injection of environment variables (NODE_ENV, DATABASE_URL, TWITCH_CLIENT_ID)
+- **Environment Variables**: Automatic injection of environment variables (NODE_ENV, GCP_PROJECT_ID, GCP_SA_KEY, and all optional secrets)
 - **Multi-tag Support**: Automatic generation of multiple Docker tags (branch, commit-sha, custom tag)
+- **Secure Secret Handling**: Safe handling of multiline JSON secrets (like GCP_SA_KEY) using temporary files
 
-#### Required Secrets
+#### Secrets
 
 | Secret | Type | Required | Description |
 |--------|------|----------|-------------|
-| `GCP_SA_KEY` | string | **Yes** | Google Cloud Service Account key (JSON) |
+| `GCP_SA_KEY` | string | **Yes** | Google Cloud Service Account key (JSON format) |
 | `GCP_PROJECT_ID` | string | **Yes** | Google Cloud Project ID |
-| `DATABASE_URL` | string | No | Database connection URL (optional) |
-| `TWITCH_CLIENT_ID` | string | No | Twitch API client ID (optional) |
+| `DATABASE_URL` | string | No | Database connection URL |
+| `TWITCH_CLIENT_ID` | string | No | Twitch API client ID |
+| `GCP_BUCKET_NAME` | string | No | Google Cloud Storage bucket name |
+| `ALLOWED_ORIGINS` | string | No | Comma-separated list of allowed CORS origins |
+| `USE_MOCK` | string | No | Enable mock mode (true/false) |
+| `DISPATCHER_URL` | string | No | Dispatcher service URL |
+| `DB_SERVICE_URL` | string | No | Database service URL |
+| `SYNC_INTERVAL_MS` | string | No | Synchronization interval in milliseconds |
+| `TWITCH_APP_ACCESS_TOKEN` | string | No | Twitch application access token |
+| `TWITCH_WEBHOOK_SECRET` | string | No | Twitch webhook secret for verification |
+| `PUBLIC_EVENTSUB_CALLBACK` | string | No | Public EventSub callback URL |
 
 ## Usage
 
@@ -150,10 +160,21 @@ jobs:
       cloud-run-cpu: 2
       health-check-url: /health
     secrets:
+      # Required secrets
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      # Optional secrets (only include those you need)
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+      GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+      ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+      USE_MOCK: ${{ secrets.USE_MOCK }}
+      DISPATCHER_URL: ${{ secrets.DISPATCHER_URL }}
+      DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
+      SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
+      TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
+      TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
+      PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
 ```
 
 ### In a separate repository
@@ -205,6 +226,33 @@ jobs:
       # New project-specific secrets
       CUSTOM_SECRET: ${{ secrets.CUSTOM_SECRET }}
 ```
+
+### Using optional secrets in CD workflow
+
+The CD workflow supports many optional secrets. Only include the ones you need:
+
+```yaml
+jobs:
+  deploy:
+    uses: my-org/shared-workflows/.github/workflows/nodejs-cd.yml@main
+    with:
+      docker-image-name: my-app
+      environment: production
+      cloud-run-service-name: my-app-service
+      artifact-registry-repository: my-repo
+    secrets:
+      # Required secrets
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      # Optional secrets - only include what you need
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+      GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+      ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+      # ... other optional secrets
+```
+
+**Note**: All optional secrets will be automatically passed as environment variables to Cloud Run if provided. See the [secrets table](#secrets) above for the complete list.
 
 ### Customize commands
 

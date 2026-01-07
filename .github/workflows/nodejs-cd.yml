@@ -84,6 +84,20 @@ on:
         required: false
       ALLOWED_ORIGINS:
         required: false
+      USE_MOCK:
+        required: false
+      DISPATCHER_URL:
+        required: false
+      DB_SERVICE_URL:
+        required: false
+      SYNC_INTERVAL_MS:
+        required: false
+      TWITCH_APP_ACCESS_TOKEN:
+        required: false
+      TWITCH_WEBHOOK_SECRET:
+        required: false
+      PUBLIC_EVENTSUB_CALLBACK:
+        required: false
 
 jobs:
   build-and-push:
@@ -325,6 +339,27 @@ jobs:
           if [ -n "${{ secrets.ALLOWED_ORIGINS }}" ]; then
             echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"
           fi
+          if [ -n "${{ secrets.USE_MOCK }}" ]; then
+            echo "USE_MOCK=${{ secrets.USE_MOCK }}"
+          fi
+          if [ -n "${{ secrets.DISPATCHER_URL }}" ]; then
+            echo "DISPATCHER_URL=${{ secrets.DISPATCHER_URL }}"
+          fi
+          if [ -n "${{ secrets.DB_SERVICE_URL }}" ]; then
+            echo "DB_SERVICE_URL=${{ secrets.DB_SERVICE_URL }}"
+          fi
+          if [ -n "${{ secrets.SYNC_INTERVAL_MS }}" ]; then
+            echo "SYNC_INTERVAL_MS=${{ secrets.SYNC_INTERVAL_MS }}"
+          fi
+          if [ -n "${{ secrets.TWITCH_APP_ACCESS_TOKEN }}" ]; then
+            echo "TWITCH_APP_ACCESS_TOKEN=${{ secrets.TWITCH_APP_ACCESS_TOKEN }}"
+          fi
+          if [ -n "${{ secrets.TWITCH_WEBHOOK_SECRET }}" ]; then
+            echo "TWITCH_WEBHOOK_SECRET=${{ secrets.TWITCH_WEBHOOK_SECRET }}"
+          fi
+          if [ -n "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" ]; then
+            echo "PUBLIC_EVENTSUB_CALLBACK=${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}"
+          fi
           
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -351,6 +386,13 @@ jobs:
             --arg twitch_client_id "${{ secrets.TWITCH_CLIENT_ID }}" \
             --arg gcp_bucket_name "${{ secrets.GCP_BUCKET_NAME }}" \
             --arg allowed_origins "${{ secrets.ALLOWED_ORIGINS }}" \
+            --arg use_mock "${{ secrets.USE_MOCK }}" \
+            --arg dispatcher_url "${{ secrets.DISPATCHER_URL }}" \
+            --arg db_service_url "${{ secrets.DB_SERVICE_URL }}" \
+            --arg sync_interval_ms "${{ secrets.SYNC_INTERVAL_MS }}" \
+            --arg twitch_app_access_token "${{ secrets.TWITCH_APP_ACCESS_TOKEN }}" \
+            --arg twitch_webhook_secret "${{ secrets.TWITCH_WEBHOOK_SECRET }}" \
+            --arg public_eventsub_callback "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" \
             '{
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
@@ -359,7 +401,14 @@ jobs:
             | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
             | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
             | if ($gcp_bucket_name | length) > 0 then . + {GCP_BUCKET_NAME: $gcp_bucket_name} else . end
-            | if ($allowed_origins | length) > 0 then . + {ALLOWED_ORIGINS: $allowed_origins} else . end' > "$ENV_FILE"
+            | if ($allowed_origins | length) > 0 then . + {ALLOWED_ORIGINS: $allowed_origins} else . end
+            | if ($use_mock | length) > 0 then . + {USE_MOCK: $use_mock} else . end
+            | if ($dispatcher_url | length) > 0 then . + {DISPATCHER_URL: $dispatcher_url} else . end
+            | if ($db_service_url | length) > 0 then . + {DB_SERVICE_URL: $db_service_url} else . end
+            | if ($sync_interval_ms | length) > 0 then . + {SYNC_INTERVAL_MS: $sync_interval_ms} else . end
+            | if ($twitch_app_access_token | length) > 0 then . + {TWITCH_APP_ACCESS_TOKEN: $twitch_app_access_token} else . end
+            | if ($twitch_webhook_secret | length) > 0 then . + {TWITCH_WEBHOOK_SECRET: $twitch_webhook_secret} else . end
+            | if ($public_eventsub_callback | length) > 0 then . + {PUBLIC_EVENTSUB_CALLBACK: $public_eventsub_callback} else . end' > "$ENV_FILE"
           
           # Clean up temporary file for GCP_SA_KEY
           rm -f "$GCP_SA_KEY_FILE"
