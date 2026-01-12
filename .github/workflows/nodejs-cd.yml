@@ -68,6 +68,10 @@ on:
         required: false
         type: string
         default: '10'
+      cloud-run-min-instances:
+        required: false
+        type: string
+        default: '0'
       artifact-registry-repository:
         required: true
         type: string
@@ -442,6 +446,7 @@ jobs:
             --memory=${{ inputs.cloud-run-memory }} \
             --cpu=${{ inputs.cloud-run-cpu }} \
             --max-instances=${{ inputs.cloud-run-max-instances }} \
+            --min-instances=${{ inputs.cloud-run-min-instances }} \
             --timeout=900 \
             --allow-unauthenticated \
             --env-vars-file="$ENV_FILE" \
