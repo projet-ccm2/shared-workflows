@@ -102,6 +102,12 @@ on:
         required: false
       PUBLIC_EVENTSUB_CALLBACK:
         required: false
+      MYSQL_DATABASE:
+        required: false
+      MYSQL_USER:
+        required: false
+      MYSQL_PASSWORD:
+        required: false
 
 jobs:
   build-and-push:
@@ -364,6 +370,15 @@ jobs:
           if [ -n "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" ]; then
             echo "PUBLIC_EVENTSUB_CALLBACK=${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}"
           fi
+          if [ -n "${{ secrets.MYSQL_DATABASE }}" ]; then
+            echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}"
+          fi
+          if [ -n "${{ secrets.MYSQL_USER }}" ]; then
+            echo "MYSQL_USER=${{ secrets.MYSQL_USER }}"
+          fi
+          if [ -n "${{ secrets.MYSQL_PASSWORD }}" ]; then
+            echo "MYSQL_PASSWORD=[REDACTED - secret present]"
+          fi
           
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -397,6 +412,9 @@ jobs:
             --arg twitch_app_access_token "${{ secrets.TWITCH_APP_ACCESS_TOKEN }}" \
             --arg twitch_webhook_secret "${{ secrets.TWITCH_WEBHOOK_SECRET }}" \
             --arg public_eventsub_callback "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" \
+            --arg mysql_database "${{ secrets.MYSQL_DATABASE }}" \
+            --arg mysql_user "${{ secrets.MYSQL_USER }}" \
+            --arg mysql_password "${{ secrets.MYSQL_PASSWORD }}" \
             '{
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
@@ -412,7 +430,10 @@ jobs:
             | if ($sync_interval_ms | length) > 0 then . + {SYNC_INTERVAL_MS: $sync_interval_ms} else . end
             | if ($twitch_app_access_token | length) > 0 then . + {TWITCH_APP_ACCESS_TOKEN: $twitch_app_access_token} else . end
             | if ($twitch_webhook_secret | length) > 0 then . + {TWITCH_WEBHOOK_SECRET: $twitch_webhook_secret} else . end
-            | if ($public_eventsub_callback | length) > 0 then . + {PUBLIC_EVENTSUB_CALLBACK: $public_eventsub_callback} else . end' > "$ENV_FILE"
+            | if ($public_eventsub_callback | length) > 0 then . + {PUBLIC_EVENTSUB_CALLBACK: $public_eventsub_callback} else . end
+            | if ($mysql_database | length) > 0 then . + {MYSQL_DATABASE: $mysql_database} else . end
+            | if ($mysql_user | length) > 0 then . + {MYSQL_USER: $mysql_user} else . end
+            | if ($mysql_password | length) > 0 then . + {MYSQL_PASSWORD: $mysql_password} else . end' > "$ENV_FILE"
           
           # Clean up temporary file for GCP_SA_KEY
           rm -f "$GCP_SA_KEY_FILE"

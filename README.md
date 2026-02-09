@@ -80,6 +80,7 @@ CD workflow for Node.js projects with support for:
 | `cloud-run-memory` | string | No | `512Mi` | Cloud Run memory allocation |
 | `cloud-run-cpu` | string | No | `1` | Cloud Run CPU allocation |
 | `cloud-run-max-instances` | string | No | `10` | Cloud Run max instances |
+| `cloud-run-min-instances` | string | No | `0` | Cloud Run min instances |
 | `artifact-registry-repository` | string | **Yes** | - | Artifact Registry repository name |
 
 #### Features
@@ -108,6 +109,9 @@ CD workflow for Node.js projects with support for:
 | `TWITCH_APP_ACCESS_TOKEN` | string | No | Twitch application access token |
 | `TWITCH_WEBHOOK_SECRET` | string | No | Twitch webhook secret for verification |
 | `PUBLIC_EVENTSUB_CALLBACK` | string | No | Public EventSub callback URL |
+| `MYSQL_DATABASE` | string | No | MySQL database name |
+| `MYSQL_USER` | string | No | MySQL database user |
+| `MYSQL_PASSWORD` | string | No | MySQL database password |
 
 ## Usage
 
@@ -175,6 +179,9 @@ jobs:
       TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
       TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
       PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
+      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
 ```
 
 ### In a separate repository
