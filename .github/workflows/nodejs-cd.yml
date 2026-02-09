@@ -108,6 +108,12 @@ on:
         required: false
       MYSQL_PASSWORD:
         required: false
+      DB_GATEWAY_BASE_URL:
+        required: false
+      REDIS_URL:
+        required: false
+      CACHE_TTL:
+        required: false
 
 jobs:
   build-and-push:
@@ -379,6 +385,15 @@ jobs:
           if [ -n "${{ secrets.MYSQL_PASSWORD }}" ]; then
             echo "MYSQL_PASSWORD=[REDACTED - secret present]"
           fi
+          if [ -n "${{ secrets.DB_GATEWAY_BASE_URL }}" ]; then
+            echo "DB_GATEWAY_BASE_URL=${{ secrets.DB_GATEWAY_BASE_URL }}"
+          fi
+          if [ -n "${{ secrets.REDIS_URL }}" ]; then
+            echo "REDIS_URL=[REDACTED - secret present]"
+          fi
+          if [ -n "${{ secrets.CACHE_TTL }}" ]; then
+            echo "CACHE_TTL=${{ secrets.CACHE_TTL }}"
+          fi
           
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -415,6 +430,9 @@ jobs:
             --arg mysql_database "${{ secrets.MYSQL_DATABASE }}" \
             --arg mysql_user "${{ secrets.MYSQL_USER }}" \
             --arg mysql_password "${{ secrets.MYSQL_PASSWORD }}" \
+            --arg db_gateway_base_url "${{ secrets.DB_GATEWAY_BASE_URL }}" \
+            --arg redis_url "${{ secrets.REDIS_URL }}" \
+            --arg cache_ttl "${{ secrets.CACHE_TTL }}" \
             '{
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
@@ -433,7 +451,10 @@ jobs:
             | if ($public_eventsub_callback | length) > 0 then . + {PUBLIC_EVENTSUB_CALLBACK: $public_eventsub_callback} else . end
             | if ($mysql_database | length) > 0 then . + {MYSQL_DATABASE: $mysql_database} else . end
             | if ($mysql_user | length) > 0 then . + {MYSQL_USER: $mysql_user} else . end
-            | if ($mysql_password | length) > 0 then . + {MYSQL_PASSWORD: $mysql_password} else . end' > "$ENV_FILE"
+            | if ($mysql_password | length) > 0 then . + {MYSQL_PASSWORD: $mysql_password} else . end
+            | if ($db_gateway_base_url | length) > 0 then . + {DB_GATEWAY_BASE_URL: $db_gateway_base_url} else . end
+            | if ($redis_url | length) > 0 then . + {REDIS_URL: $redis_url} else . end
+            | if ($cache_ttl | length) > 0 then . + {CACHE_TTL: $cache_ttl} else . end' > "$ENV_FILE"
           
           # Clean up temporary file for GCP_SA_KEY
           rm -f "$GCP_SA_KEY_FILE"
