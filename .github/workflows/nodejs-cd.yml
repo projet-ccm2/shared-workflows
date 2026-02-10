@@ -100,6 +100,8 @@ on:
         required: false
       TWITCH_WEBHOOK_SECRET:
         required: false
+      TWITCH_ISSUER:
+        required: false
       PUBLIC_EVENTSUB_CALLBACK:
         required: false
       MYSQL_DATABASE:
@@ -373,6 +375,9 @@ jobs:
           if [ -n "${{ secrets.TWITCH_WEBHOOK_SECRET }}" ]; then
             echo "TWITCH_WEBHOOK_SECRET=${{ secrets.TWITCH_WEBHOOK_SECRET }}"
           fi
+          if [ -n "${{ secrets.TWITCH_ISSUER }}" ]; then
+            echo "TWITCH_ISSUER=${{ secrets.TWITCH_ISSUER }}"
+          fi
           if [ -n "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" ]; then
             echo "PUBLIC_EVENTSUB_CALLBACK=${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}"
           fi
@@ -426,6 +431,7 @@ jobs:
             --arg sync_interval_ms "${{ secrets.SYNC_INTERVAL_MS }}" \
             --arg twitch_app_access_token "${{ secrets.TWITCH_APP_ACCESS_TOKEN }}" \
             --arg twitch_webhook_secret "${{ secrets.TWITCH_WEBHOOK_SECRET }}" \
+            --arg twitch_issuer "${{ secrets.TWITCH_ISSUER }}" \
             --arg public_eventsub_callback "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" \
             --arg mysql_database "${{ secrets.MYSQL_DATABASE }}" \
             --arg mysql_user "${{ secrets.MYSQL_USER }}" \
@@ -448,6 +454,7 @@ jobs:
             | if ($sync_interval_ms | length) > 0 then . + {SYNC_INTERVAL_MS: $sync_interval_ms} else . end
             | if ($twitch_app_access_token | length) > 0 then . + {TWITCH_APP_ACCESS_TOKEN: $twitch_app_access_token} else . end
             | if ($twitch_webhook_secret | length) > 0 then . + {TWITCH_WEBHOOK_SECRET: $twitch_webhook_secret} else . end
+            | if ($twitch_issuer | length) > 0 then . + {TWITCH_ISSUER: $twitch_issuer} else . end
             | if ($public_eventsub_callback | length) > 0 then . + {PUBLIC_EVENTSUB_CALLBACK: $public_eventsub_callback} else . end
             | if ($mysql_database | length) > 0 then . + {MYSQL_DATABASE: $mysql_database} else . end
             | if ($mysql_user | length) > 0 then . + {MYSQL_USER: $mysql_user} else . end
