@@ -112,6 +112,9 @@ CD workflow for Node.js projects with support for:
 | `MYSQL_DATABASE` | string | No | MySQL database name |
 | `MYSQL_USER` | string | No | MySQL database user |
 | `MYSQL_PASSWORD` | string | No | MySQL database password |
+| `DB_GATEWAY_BASE_URL` | string | No | Database gateway base URL |
+| `REDIS_URL` | string | No | Redis connection URL |
+| `CACHE_TTL` | string | No | Cache TTL (time-to-live) |
 
 ## Usage
 
@@ -182,6 +185,9 @@ jobs:
       MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
       MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      CACHE_TTL: ${{ secrets.CACHE_TTL }}
 ```
 
 ### In a separate repository
