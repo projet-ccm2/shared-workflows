@@ -108,6 +108,7 @@ CD workflow for Node.js projects with support for:
 | `SYNC_INTERVAL_MS` | string | No | Synchronization interval in milliseconds |
 | `TWITCH_APP_ACCESS_TOKEN` | string | No | Twitch application access token |
 | `TWITCH_WEBHOOK_SECRET` | string | No | Twitch webhook secret for verification |
+| `TWITCH_ISSUER` | string | No | Twitch token issuer (JWT/validation) |
 | `PUBLIC_EVENTSUB_CALLBACK` | string | No | Public EventSub callback URL |
 | `MYSQL_DATABASE` | string | No | MySQL database name |
 | `MYSQL_USER` | string | No | MySQL database user |
@@ -183,6 +184,7 @@ jobs:
       SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
       TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
       TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
+      TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
       PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
       MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
@@ -266,6 +268,10 @@ jobs:
       TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
       GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
       ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+      DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      CACHE_TTL: ${{ secrets.CACHE_TTL }}
+      TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
       # ... other optional secrets
 ```
 
