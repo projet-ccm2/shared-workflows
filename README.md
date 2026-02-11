@@ -115,6 +115,8 @@ CD workflow for Node.js projects with support for:
 | `DB_GATEWAY_BASE_URL` | string | No | Database gateway base URL |
 | `REDIS_URL` | string | No | Redis connection URL |
 | `CACHE_TTL` | string | No | Cache TTL (time-to-live) |
+| `AUTH_SERVICE_URL` | string | No | Authentication service base URL |
+| `FRONT_URL` | string | No | Frontend application URL |
 
 ## Usage
 
@@ -188,6 +190,8 @@ jobs:
       DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
       CACHE_TTL: ${{ secrets.CACHE_TTL }}
+      AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+      FRONT_URL: ${{ secrets.FRONT_URL }}
 ```
 
 ### In a separate repository

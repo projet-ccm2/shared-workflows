@@ -114,6 +114,10 @@ on:
         required: false
       CACHE_TTL:
         required: false
+      AUTH_SERVICE_URL:
+        required: false
+      FRONT_URL:
+        required: false
 
 jobs:
   build-and-push:
@@ -394,6 +398,12 @@ jobs:
           if [ -n "${{ secrets.CACHE_TTL }}" ]; then
             echo "CACHE_TTL=${{ secrets.CACHE_TTL }}"
           fi
+          if [ -n "${{ secrets.AUTH_SERVICE_URL }}" ]; then
+            echo "AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}"
+          fi
+          if [ -n "${{ secrets.FRONT_URL }}" ]; then
+            echo "FRONT_URL=${{ secrets.FRONT_URL }}"
+          fi
           
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -433,6 +443,8 @@ jobs:
             --arg db_gateway_base_url "${{ secrets.DB_GATEWAY_BASE_URL }}" \
             --arg redis_url "${{ secrets.REDIS_URL }}" \
             --arg cache_ttl "${{ secrets.CACHE_TTL }}" \
+            --arg auth_service_url "${{ secrets.AUTH_SERVICE_URL }}" \
+            --arg front_url "${{ secrets.FRONT_URL }}" \
             '{
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
@@ -454,7 +466,9 @@ jobs:
             | if ($mysql_password | length) > 0 then . + {MYSQL_PASSWORD: $mysql_password} else . end
             | if ($db_gateway_base_url | length) > 0 then . + {DB_GATEWAY_BASE_URL: $db_gateway_base_url} else . end
             | if ($redis_url | length) > 0 then . + {REDIS_URL: $redis_url} else . end
-            | if ($cache_ttl | length) > 0 then . + {CACHE_TTL: $cache_ttl} else . end' > "$ENV_FILE"
+            | if ($cache_ttl | length) > 0 then . + {CACHE_TTL: $cache_ttl} else . end
+            | if ($auth_service_url | length) > 0 then . + {AUTH_SERVICE_URL: $auth_service_url} else . end
+            | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end' > "$ENV_FILE"
           
           # Clean up temporary file for GCP_SA_KEY
           rm -f "$GCP_SA_KEY_FILE"
