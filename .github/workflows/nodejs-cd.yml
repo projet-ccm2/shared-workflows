@@ -571,29 +571,30 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     if: needs.deploy.result == 'success'
-    env:
-      ENVIRONMENT: ${{ inputs.environment }}
-      REQUIRED_ENV_VARS: ${{ inputs.required_env_vars }}
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
-      GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
-      ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
-      USE_MOCK: ${{ secrets.USE_MOCK }}
-      DISPATCHER_URL: ${{ secrets.DISPATCHER_URL }}
-      DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
-      SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
-      TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
-      TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
-      TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
-      PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
-      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-      MYSQL_USER: ${{ secrets.MYSQL_USER }}
-      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-      DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
-      REDIS_URL: ${{ secrets.REDIS_URL }}
-      CACHE_TTL: ${{ secrets.CACHE_TTL }}
     steps:
       - name: Check required env vars
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          REQUIRED_ENV_VARS: ${{ inputs.required_env_vars }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          USE_MOCK: ${{ secrets.USE_MOCK }}
+          DISPATCHER_URL: ${{ secrets.DISPATCHER_URL }}
+          DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
+          SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
+          TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
+          TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
+          TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
+          PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          CACHE_TTL: ${{ secrets.CACHE_TTL }}
         run: |
           case "$ENVIRONMENT" in
             integration|production)
