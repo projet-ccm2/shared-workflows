@@ -598,29 +598,29 @@ jobs:
           case "$ENVIRONMENT" in
             integration|production)
               if [ -z "$(echo "$REQUIRED_ENV_VARS" | xargs)" ]; then
-                echo "required_env_vars est obligatoire lorsque environment est integration ou production."
+                echo "required_env_vars is required when environment is integration or production."
                 exit 1
               fi
               ;;
           esac
-          echo "Variables listées dans required_env_vars :"
+          echo "Variables listed in required_env_vars:"
           failed=0
           while IFS= read -r var; do
             var=$(echo "$var" | xargs)
             [ -z "$var" ] && continue
             val="${!var}"
             if [ -z "$val" ]; then
-              echo "  $var : vide"
+              echo "  $var : empty"
               failed=1
             else
-              echo "  $var : mise"
+              echo "  $var : set"
             fi
           done <<< "$(echo "$REQUIRED_ENV_VARS" | tr ',' '\n')"
           if [ "$failed" -eq 1 ]; then
-            echo "Certaines variables requises sont absentes ou vides. Vérifiez les secrets du dépôt (ex. PROD_DB_SERVICE_URL si vous passez DB_SERVICE_URL)."
+            echo "Some required variables are missing or empty. Check repository secrets (e.g. PROD_DB_SERVICE_URL when passing DB_SERVICE_URL)."
             case "$ENVIRONMENT" in
               integration|production) exit 1 ;;
-              *) echo "Environnement $ENVIRONMENT : non bloquant." ; exit 0 ;;
+              *) echo "Environment $ENVIRONMENT: non-blocking." ; exit 0 ;;
             esac
           fi
-          echo "Toutes les variables requises sont définies."
+          echo "All required variables are set."
