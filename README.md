@@ -82,6 +82,7 @@ CD workflow for Node.js projects with support for:
 | `cloud-run-max-instances` | string | No | `10` | Cloud Run max instances |
 | `cloud-run-min-instances` | string | No | `0` | Cloud Run min instances |
 | `artifact-registry-repository` | string | **Yes** | - | Artifact Registry repository name |
+| `required_env_vars` | string | **Yes** (integration/production) | - | Comma-separated list of env var names that must be non-empty when `environment` is `integration` or `production` (e.g. `DB_SERVICE_URL,DATABASE_URL`). Obligatory when `environment` is `integration` or `production`; the workflow fails at the end of the run if this input is empty or if any listed variable is missing. |
 
 #### Features
 
@@ -89,6 +90,7 @@ CD workflow for Node.js projects with support for:
 - **Parameter Validation**: Comprehensive validation of all required inputs and secrets before deployment
 - **Health Check**: Optional health check validation after deployment using auto-generated URL
 - **Environment Variables**: Automatic injection of environment variables (NODE_ENV, GCP_PROJECT_ID, GCP_SA_KEY, and all optional secrets)
+- **Env vars validation (integration/production)**: When `environment` is `integration` or `production`, you can set `required_env_vars` so that the workflow fails at the end of the run if any of those variables are missing or empty (e.g. if the caller passes `DB_SERVICE_URL: ${{ secrets.PROD_DB_SERVICE_URL }}` but `PROD_DB_SERVICE_URL` is not set). The check runs after deploy so the service URL can be created before other services depend on it.
 - **Multi-tag Support**: Automatic generation of multiple Docker tags (branch, commit-sha, custom tag)
 - **Secure Secret Handling**: Safe handling of multiline JSON secrets (like GCP_SA_KEY) using temporary files
 
@@ -169,6 +171,7 @@ jobs:
       cloud-run-memory: 1Gi
       cloud-run-cpu: 2
       health-check-url: /health
+      required_env_vars: DB_SERVICE_URL,DATABASE_URL
     secrets:
       # Required secrets
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}

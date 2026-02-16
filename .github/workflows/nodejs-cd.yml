@@ -75,6 +75,10 @@ on:
       artifact-registry-repository:
         required: true
         type: string
+      required_env_vars:
+        required: false
+        type: string
+        description: Comma-separated list of env var names that must be non-empty when environment is integration or production (e.g. DB_SERVICE_URL,DATABASE_URL). Obligatory when environment is integration or production.
     secrets:
       GCP_SA_KEY:
         required: true
@@ -561,3 +565,51 @@ jobs:
           echo "Image: ${{ needs.build-and-push.outputs.image-tags }}"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
+
+  validate-env:
+    name: Validate required env vars (integration/production)
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: needs.deploy.result == 'success' && (inputs.environment == 'integration' || inputs.environment == 'production')
+    env:
+      REQUIRED_ENV_VARS: ${{ inputs.required_env_vars }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+      GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+      ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+      USE_MOCK: ${{ secrets.USE_MOCK }}
+      DISPATCHER_URL: ${{ secrets.DISPATCHER_URL }}
+      DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
+      SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
+      TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
+      TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
+      TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
+      PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
+      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      CACHE_TTL: ${{ secrets.CACHE_TTL }}
+    steps:
+      - name: Check required env vars
+        run: |
+          if [ -z "$(echo "$REQUIRED_ENV_VARS" | xargs)" ]; then
+            echo "required_env_vars est obligatoire lorsque environment est integration ou production."
+            exit 1
+          fi
+          failed=0
+          while IFS= read -r var; do
+            var=$(echo "$var" | xargs)
+            [ -z "$var" ] && continue
+            val="${!var}"
+            if [ -z "$val" ]; then
+              echo "Variable requise non définie : $var"
+              failed=1
+            fi
+          done <<< "$(echo "$REQUIRED_ENV_VARS" | tr ',' '\n')"
+          if [ "$failed" -eq 1 ]; then
+            echo "Certaines variables requises sont absentes ou vides. Vérifiez les secrets du dépôt (ex. PROD_DB_SERVICE_URL si vous passez DB_SERVICE_URL)."
+            exit 1
+          fi
+          echo "Toutes les variables requises sont définies."
