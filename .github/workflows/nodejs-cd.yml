@@ -567,11 +567,12 @@ jobs:
           echo "Branch: ${{ github.ref_name }}"
 
   validate-env:
-    name: Validate required env vars (integration/production)
+    name: Validate required env vars
     runs-on: ubuntu-latest
     needs: deploy
-    if: needs.deploy.result == 'success' && (inputs.environment == 'integration' || inputs.environment == 'production')
+    if: needs.deploy.result == 'success'
     env:
+      ENVIRONMENT: ${{ inputs.environment }}
       REQUIRED_ENV_VARS: ${{ inputs.required_env_vars }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
@@ -594,22 +595,32 @@ jobs:
     steps:
       - name: Check required env vars
         run: |
-          if [ -z "$(echo "$REQUIRED_ENV_VARS" | xargs)" ]; then
-            echo "required_env_vars est obligatoire lorsque environment est integration ou production."
-            exit 1
-          fi
+          case "$ENVIRONMENT" in
+            integration|production)
+              if [ -z "$(echo "$REQUIRED_ENV_VARS" | xargs)" ]; then
+                echo "required_env_vars est obligatoire lorsque environment est integration ou production."
+                exit 1
+              fi
+              ;;
+          esac
+          echo "Variables listées dans required_env_vars :"
           failed=0
           while IFS= read -r var; do
             var=$(echo "$var" | xargs)
             [ -z "$var" ] && continue
             val="${!var}"
             if [ -z "$val" ]; then
-              echo "Variable requise non définie : $var"
+              echo "  $var : vide"
               failed=1
+            else
+              echo "  $var : mise"
             fi
           done <<< "$(echo "$REQUIRED_ENV_VARS" | tr ',' '\n')"
           if [ "$failed" -eq 1 ]; then
             echo "Certaines variables requises sont absentes ou vides. Vérifiez les secrets du dépôt (ex. PROD_DB_SERVICE_URL si vous passez DB_SERVICE_URL)."
-            exit 1
+            case "$ENVIRONMENT" in
+              integration|production) exit 1 ;;
+              *) echo "Environnement $ENVIRONMENT : non bloquant." ; exit 0 ;;
+            esac
           fi
           echo "Toutes les variables requises sont définies."
