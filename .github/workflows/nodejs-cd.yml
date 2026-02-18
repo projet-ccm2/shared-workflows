@@ -512,7 +512,7 @@ jobs:
           ENVIRONMENT="${{ inputs.environment }}"
           SERVICE_TYPE="${{ inputs.service_type }}"
           GCP_REGION="${{ inputs.gcp-region }}"
-          VPC_CONNECTOR_NAME="streamquest-vpc-2-connector"
+          VPC_CONNECTOR_NAME="streamquest-vpc-2-conn"
           
           if [ "$ENVIRONMENT" = "development" ]; then
             echo "Environment is development: using allow-unauthenticated and default ingress (service_type ignored)."
