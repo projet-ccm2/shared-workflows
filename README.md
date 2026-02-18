@@ -83,6 +83,7 @@ CD workflow for Node.js projects with support for:
 | `cloud-run-min-instances` | string | No | `0` | Cloud Run min instances |
 | `artifact-registry-repository` | string | **Yes** | - | Artifact Registry repository name |
 | `required_env_vars` | string | **Yes** (integration/production) | - | Comma-separated list of env var names that must be non-empty when `environment` is `integration` or `production` (e.g. `DB_SERVICE_URL,DATABASE_URL`). Obligatory when `environment` is `integration` or `production`; the workflow fails at the end of the run if this input is empty or if any listed variable is missing. |
+| `service_type` | string | **Yes** (when not development) | - | Cloud Run type: `front` \| `bff` \| `back_prive`. Required and validated when `environment` is not `development` (must be exactly one of these values). Ignored when `environment` is `development`. For `bff` and `back_prive`, the VPC connector is fixed to `streamquest-vpc-2-connector` (hardcoded); the workflow checks that it exists in the region before deploying. |
 
 #### Features
 
@@ -91,6 +92,7 @@ CD workflow for Node.js projects with support for:
 - **Health Check**: Optional health check validation after deployment using auto-generated URL
 - **Environment Variables**: Automatic injection of environment variables (NODE_ENV, GCP_PROJECT_ID, GCP_SA_KEY, and all optional secrets)
 - **Env vars validation (integration/production)**: When `environment` is `integration` or `production`, you can set `required_env_vars` so that the workflow fails at the end of the run if any of those variables are missing or empty (e.g. if the caller passes `DB_SERVICE_URL: ${{ secrets.PROD_DB_SERVICE_URL }}` but `PROD_DB_SERVICE_URL` is not set). The check runs after deploy so the service URL can be created before other services depend on it.
+- **Service type (FRONT \| BFF \| BACK_PRIVE)**: When `environment` is not `development`, you must set `service_type` to `front`, `bff`, or `back_prive`. This controls Cloud Run ingress, authentication, and VPC connector: **front** = public (ingress all, allow-unauthenticated); **bff** = public + VPC connector; **back_prive** = internal only (ingress internal, no allow-unauthenticated, VPC connector). Auth is handled in the app (e.g. Twitch OAuth), no IAP. The VPC connector name is hardcoded (`streamquest-vpc-2-connector`) for bff and back_prive; the workflow verifies it exists in the region before deploy. Load Balancer / NEG (without IAP) are configured outside this workflow (e.g. Terraform).
 - **Multi-tag Support**: Automatic generation of multiple Docker tags (branch, commit-sha, custom tag)
 - **Secure Secret Handling**: Safe handling of multiline JSON secrets (like GCP_SA_KEY) using temporary files
 
