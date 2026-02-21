@@ -637,6 +637,19 @@ jobs:
                 '
               fi
             fi
+            
+            # Display result of last health check request (URL, HTTP status, body)
+            echo ""
+            echo "Last health check request: $HEALTH_CHECK_URL"
+            if [ "$USE_TOKEN" = "true" ]; then
+              RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL")
+            else
+              RESPONSE=$(curl -s -w "\n%{http_code}" "$HEALTH_CHECK_URL")
+            fi
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            echo "HTTP status: $HTTP_CODE"
+            echo "Response body: $BODY"
           else
             echo "⚠️ No health check route provided, skipping health check"
           fi
