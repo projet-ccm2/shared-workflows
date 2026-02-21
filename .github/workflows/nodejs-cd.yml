@@ -598,18 +598,44 @@ jobs:
             HEALTH_CHECK_URL="$SERVICE_URL${{ inputs.health-check-url }}"
             echo "Health check URL: $HEALTH_CHECK_URL"
             
-            # Test the URL
-            if curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
-              echo "✅ Health check passed"
-            else
-              echo "⏳ Service not ready yet, waiting..."
-              timeout ${{ inputs.health-check-timeout }} bash -c '
-                until curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
-                  echo "Waiting for service to be ready..."
-                  sleep 10
-                done
+            # Use identity token for private service (back_prive) when not in development
+            ENVIRONMENT="${{ inputs.environment }}"
+            SERVICE_TYPE="${{ inputs.service_type }}"
+            SERVICE_TYPE_TRIM=$(echo "$SERVICE_TYPE" | xargs)
+            USE_TOKEN="false"
+            if [ "$ENVIRONMENT" != "development" ] && [ "$SERVICE_TYPE_TRIM" = "back_prive" ]; then
+              USE_TOKEN="true"
+              echo "Private service (back_prive): using identity token for health check."
+            fi
+            
+            if [ "$USE_TOKEN" = "true" ]; then
+              IDENTITY_TOKEN=$(gcloud auth print-identity-token --audiences="$SERVICE_URL")
+              export IDENTITY_TOKEN
+              if curl -s -f -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
                 echo "✅ Health check passed"
-              '
+              else
+                echo "⏳ Service not ready yet, waiting..."
+                timeout ${{ inputs.health-check-timeout }} bash -c '
+                  until curl -s -f -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
+                    echo "Waiting for service to be ready..."
+                    sleep 10
+                  done
+                  echo "✅ Health check passed"
+                '
+              fi
+            else
+              if curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
+                echo "✅ Health check passed"
+              else
+                echo "⏳ Service not ready yet, waiting..."
+                timeout ${{ inputs.health-check-timeout }} bash -c '
+                  until curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
+                    echo "Waiting for service to be ready..."
+                    sleep 10
+                  done
+                  echo "✅ Health check passed"
+                '
+              fi
             fi
           else
             echo "⚠️ No health check route provided, skipping health check"
