@@ -608,6 +608,7 @@ jobs:
               echo "Private service (back_prive): using identity token for health check."
             fi
             
+            HEALTH_EXIT=0
             if [ "$USE_TOKEN" = "true" ]; then
               IDENTITY_TOKEN=$(gcloud auth print-identity-token --audiences="$SERVICE_URL")
               export IDENTITY_TOKEN
@@ -622,6 +623,7 @@ jobs:
                   done
                   echo "✅ Health check passed"
                 '
+                HEALTH_EXIT=$?
               fi
             else
               if curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
@@ -635,21 +637,26 @@ jobs:
                   done
                   echo "✅ Health check passed"
                 '
+                HEALTH_EXIT=$?
               fi
             fi
             
-            # Display result of last health check request (URL, HTTP status, body)
+            # Always display result of last health check request (even on timeout/failure)
             echo ""
             echo "Last health check request: $HEALTH_CHECK_URL"
             if [ "$USE_TOKEN" = "true" ]; then
-              RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL")
+              RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL" 2>&1)
             else
-              RESPONSE=$(curl -s -w "\n%{http_code}" "$HEALTH_CHECK_URL")
+              RESPONSE=$(curl -s -w "\n%{http_code}" "$HEALTH_CHECK_URL" 2>&1)
             fi
             HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
             BODY=$(echo "$RESPONSE" | sed '$d')
             echo "HTTP status: $HTTP_CODE"
             echo "Response body: $BODY"
+            if [ "$HEALTH_EXIT" -ne 0 ]; then
+              echo "Health check failed (exit code: $HEALTH_EXIT, 124 = timeout)."
+              exit $HEALTH_EXIT
+            fi
           else
             echo "⚠️ No health check route provided, skipping health check"
           fi
