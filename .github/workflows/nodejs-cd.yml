@@ -133,6 +133,8 @@ on:
         required: false
       FRONT_URL:
         required: false
+      JWT_SECRET:
+        required: false
 
 jobs:
   build-and-push:
@@ -422,6 +424,9 @@ jobs:
           if [ -n "${{ secrets.FRONT_URL }}" ]; then
             echo "FRONT_URL=${{ secrets.FRONT_URL }}"
           fi
+          if [ -n "${{ secrets.JWT_SECRET }}" ]; then
+            echo "JWT_SECRET=[REDACTED - secret present]"
+          fi
           
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -464,6 +469,7 @@ jobs:
             --arg cache_ttl "${{ secrets.CACHE_TTL }}" \
             --arg auth_service_url "${{ secrets.AUTH_SERVICE_URL }}" \
             --arg front_url "${{ secrets.FRONT_URL }}" \
+            --arg jwt_secret "${{ secrets.JWT_SECRET }}" \
             '{
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
@@ -488,7 +494,8 @@ jobs:
             | if ($redis_url | length) > 0 then . + {REDIS_URL: $redis_url} else . end
             | if ($cache_ttl | length) > 0 then . + {CACHE_TTL: $cache_ttl} else . end
             | if ($auth_service_url | length) > 0 then . + {AUTH_SERVICE_URL: $auth_service_url} else . end
-            | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end' > "$ENV_FILE"
+            | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end
+            | if ($jwt_secret | length) > 0 then . + {JWT_SECRET: $jwt_secret} else . end' > "$ENV_FILE"
           
           # Clean up temporary file for GCP_SA_KEY
           rm -f "$GCP_SA_KEY_FILE"
@@ -715,11 +722,14 @@ jobs:
           TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
           PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+          FRONT_URL: ${{ secrets.FRONT_URL }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           case "$ENVIRONMENT" in
             integration|production)

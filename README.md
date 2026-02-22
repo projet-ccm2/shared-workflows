@@ -122,6 +122,7 @@ CD workflow for Node.js projects with support for:
 | `CACHE_TTL` | string | No | Cache TTL (time-to-live) |
 | `AUTH_SERVICE_URL` | string | No | Authentication service base URL |
 | `FRONT_URL` | string | No | Frontend application URL |
+| `JWT_SECRET` | string | No | JWT signing secret |
 
 ## Usage
 
@@ -199,6 +200,7 @@ jobs:
       CACHE_TTL: ${{ secrets.CACHE_TTL }}
       AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
       FRONT_URL: ${{ secrets.FRONT_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
 ```
 
 ### In a separate repository
@@ -277,6 +279,7 @@ jobs:
       REDIS_URL: ${{ secrets.REDIS_URL }}
       CACHE_TTL: ${{ secrets.CACHE_TTL }}
       TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
       # ... other optional secrets
 ```
 
