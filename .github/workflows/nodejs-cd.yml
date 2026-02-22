@@ -45,6 +45,11 @@ on:
         required: false
         type: string
         default: '60'
+      health-check-initial-delay:
+        description: Seconds to wait before first health check (e.g. for new revision cold start). Use 0 to skip.
+        required: false
+        type: string
+        default: '0'
       gcp-region:
         required: false
         type: string
@@ -583,6 +588,12 @@ jobs:
         run: |
           set +e
           if [ -n "${{ inputs.health-check-url }}" ]; then
+            ENVIRONMENT="${{ inputs.environment }}"
+            SERVICE_TYPE="${{ inputs.service_type }}"
+            SERVICE_TYPE_TRIM=$(echo "$SERVICE_TYPE" | xargs)
+            if [ "$ENVIRONMENT" != "development" ] && [ "$SERVICE_TYPE_TRIM" = "back_prive" ]; then
+              echo "⏭️ Skipping health check: private service (back_prive) not reachable from CI"
+            else
             echo "🔍 Running health check..."
             
             # Get the Cloud Run service URL
@@ -598,6 +609,13 @@ jobs:
             # Build the complete health check URL
             HEALTH_CHECK_URL="$SERVICE_URL${{ inputs.health-check-url }}"
             echo "Health check URL: $HEALTH_CHECK_URL"
+            
+            # Optional delay before first check (e.g. new revision cold start)
+            DELAY="${{ inputs.health-check-initial-delay }}"
+            if [ -n "$DELAY" ] && [ "$DELAY" -gt 0 ] 2>/dev/null; then
+              echo "Waiting ${DELAY}s before first health check (revision startup)..."
+              sleep "$DELAY"
+            fi
             
             # Use identity token for private service (back_prive) when not in development
             ENVIRONMENT="${{ inputs.environment }}"
@@ -657,6 +675,7 @@ jobs:
             if [ "$HEALTH_EXIT" -ne 0 ]; then
               echo "Health check failed (exit code: $HEALTH_EXIT, 124 = timeout)."
               exit $HEALTH_EXIT
+            fi
             fi
           else
             echo "⚠️ No health check route provided, skipping health check"
