@@ -342,6 +342,27 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           GCP_SA_KEY_ENV: ${{ secrets.GCP_SA_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          USE_MOCK: ${{ secrets.USE_MOCK }}
+          DISPATCHER_URL: ${{ secrets.DISPATCHER_URL }}
+          DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
+          SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
+          TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
+          TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
+          TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
+          PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          CACHE_TTL: ${{ secrets.CACHE_TTL }}
+          AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+          FRONT_URL: ${{ secrets.FRONT_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           echo "🚀 Deploying to Cloud Run..."
           
@@ -352,173 +373,66 @@ jobs:
           
           echo "Image: $IMAGE_TAG"
           
-          # Debug Environment Variables
-          echo "🔍 Environment variables to be set:"
-          echo "NODE_ENV=${{ inputs.environment }}"
-          echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
-          
-          # Check if GCP_SA_KEY is set
+          PROJECT="${{ secrets.GCP_PROJECT_ID }}"
           if [ -n "$GCP_SA_KEY_ENV" ]; then
             echo "✅ GCP_SA_KEY=[REDACTED - secret present]"
           else
-            echo "⚠️ GCP_SA_KEY secret is empty or not set in the reusable workflow"
-            echo "💡 Make sure GCP_SA_KEY is passed correctly in the calling workflow's secrets section"
-          fi
-          if [ -n "${{ secrets.DATABASE_URL }}" ]; then
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
-          fi
-          if [ -n "${{ secrets.TWITCH_CLIENT_ID }}" ]; then
-            echo "TWITCH_CLIENT_ID=${{ secrets.TWITCH_CLIENT_ID }}"
-          fi
-          if [ -n "${{ secrets.GCP_BUCKET_NAME }}" ]; then
-            echo "GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }}"
-          fi
-          if [ -n "${{ secrets.ALLOWED_ORIGINS }}" ]; then
-            echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"
-          fi
-          if [ -n "${{ secrets.USE_MOCK }}" ]; then
-            echo "USE_MOCK=${{ secrets.USE_MOCK }}"
-          fi
-          if [ -n "${{ secrets.DISPATCHER_URL }}" ]; then
-            echo "DISPATCHER_URL=${{ secrets.DISPATCHER_URL }}"
-          fi
-          if [ -n "${{ secrets.DB_SERVICE_URL }}" ]; then
-            echo "DB_SERVICE_URL=${{ secrets.DB_SERVICE_URL }}"
-          fi
-          if [ -n "${{ secrets.SYNC_INTERVAL_MS }}" ]; then
-            echo "SYNC_INTERVAL_MS=${{ secrets.SYNC_INTERVAL_MS }}"
-          fi
-          if [ -n "${{ secrets.TWITCH_APP_ACCESS_TOKEN }}" ]; then
-            echo "TWITCH_APP_ACCESS_TOKEN=${{ secrets.TWITCH_APP_ACCESS_TOKEN }}"
-          fi
-          if [ -n "${{ secrets.TWITCH_WEBHOOK_SECRET }}" ]; then
-            echo "TWITCH_WEBHOOK_SECRET=${{ secrets.TWITCH_WEBHOOK_SECRET }}"
-          fi
-          if [ -n "${{ secrets.TWITCH_ISSUER }}" ]; then
-            echo "TWITCH_ISSUER=${{ secrets.TWITCH_ISSUER }}"
-          fi
-          if [ -n "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" ]; then
-            echo "PUBLIC_EVENTSUB_CALLBACK=${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}"
-          fi
-          if [ -n "${{ secrets.MYSQL_DATABASE }}" ]; then
-            echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}"
-          fi
-          if [ -n "${{ secrets.MYSQL_USER }}" ]; then
-            echo "MYSQL_USER=${{ secrets.MYSQL_USER }}"
-          fi
-          if [ -n "${{ secrets.MYSQL_PASSWORD }}" ]; then
-            echo "MYSQL_PASSWORD=[REDACTED - secret present]"
-          fi
-          if [ -n "${{ secrets.DB_GATEWAY_BASE_URL }}" ]; then
-            echo "DB_GATEWAY_BASE_URL=${{ secrets.DB_GATEWAY_BASE_URL }}"
-          fi
-          if [ -n "${{ secrets.REDIS_URL }}" ]; then
-            echo "REDIS_URL=[REDACTED - secret present]"
-          fi
-          if [ -n "${{ secrets.CACHE_TTL }}" ]; then
-            echo "CACHE_TTL=${{ secrets.CACHE_TTL }}"
-          fi
-          if [ -n "${{ secrets.AUTH_SERVICE_URL }}" ]; then
-            echo "AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}"
-          fi
-          if [ -n "${{ secrets.FRONT_URL }}" ]; then
-            echo "FRONT_URL=${{ secrets.FRONT_URL }}"
-          fi
-          if [ -n "${{ secrets.JWT_SECRET }}" ]; then
-            echo "JWT_SECRET=[REDACTED - secret present]"
-          fi
-          
-          
-          # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
-          GCP_SA_KEY_FILE=$(mktemp)
-          if [ -n "$GCP_SA_KEY_ENV" ]; then
-            # Write secret from environment variable to file using printf
-            printf '%s' "$GCP_SA_KEY_ENV" > "$GCP_SA_KEY_FILE"
-            echo "✅ GCP_SA_KEY secret is present and written to temporary file"
-            echo "📏 GCP_SA_KEY file size: $(wc -c < "$GCP_SA_KEY_FILE") bytes"
-          else
             echo "⚠️ GCP_SA_KEY secret is empty or not set"
-            touch "$GCP_SA_KEY_FILE"
           fi
           
-          # Create temporary JSON file for environment variables using jq
-          ENV_FILE=$(mktemp)
+          # Sync GitHub secrets to Secret Manager (create/update), then inject into Cloud Run (not visible in console)
+          sync_var() {
+            local var_name=$1
+            local secret_name=$2
+            local val
+            if [ "$var_name" = "GCP_SA_KEY" ]; then
+              val="$GCP_SA_KEY_ENV"
+            else
+              val="${!var_name}"
+            fi
+            [ -z "$val" ] && return 0
+            echo "🔐 Syncing $var_name -> Secret Manager ($secret_name)"
+            if ! gcloud secrets describe "$secret_name" --project="$PROJECT" 2>/dev/null; then
+              gcloud secrets create "$secret_name" --replication-policy=automatic --project="$PROJECT"
+            fi
+            if [ "$var_name" = "GCP_SA_KEY" ]; then
+              printf '%s' "$val" | gcloud secrets versions add "$secret_name" --data-file=- --project="$PROJECT"
+            else
+              echo -n "$val" | gcloud secrets versions add "$secret_name" --data-file=- --project="$PROJECT"
+            fi
+          }
           
-          # Build JSON object with jq
+          SECRETS_ARGS=""
+          add_secret_arg() {
+            local var_name=$1
+            local secret_name=$2
+            local val
+            if [ "$var_name" = "GCP_SA_KEY" ]; then
+              val="$GCP_SA_KEY_ENV"
+            else
+              val="${!var_name}"
+            fi
+            [ -z "$val" ] && return 0
+            [ -n "$SECRETS_ARGS" ] && SECRETS_ARGS="$SECRETS_ARGS,"
+            SECRETS_ARGS="${SECRETS_ARGS}${var_name}=${secret_name}:latest"
+          }
+          
+          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url JWT_SECRET:jwt-secret; do
+            v="${pair%%:*}"
+            s="${pair#*:}"
+            sync_var "$v" "$s"
+            add_secret_arg "$v" "$s"
+          done
+          
+          SET_SECRETS_FLAG=""
+          [ -n "$SECRETS_ARGS" ] && SET_SECRETS_FLAG="--set-secrets=$SECRETS_ARGS"
+          
+          # Env file: only NODE_ENV and GCP_PROJECT_ID (non-sensitive)
+          ENV_FILE=$(mktemp)
           jq -n \
             --arg node_env "${{ inputs.environment }}" \
             --arg gcp_project_id "${{ secrets.GCP_PROJECT_ID }}" \
-            --rawfile gcp_sa_key_content "$GCP_SA_KEY_FILE" \
-            --arg database_url "${{ secrets.DATABASE_URL }}" \
-            --arg twitch_client_id "${{ secrets.TWITCH_CLIENT_ID }}" \
-            --arg gcp_bucket_name "${{ secrets.GCP_BUCKET_NAME }}" \
-            --arg allowed_origins "${{ secrets.ALLOWED_ORIGINS }}" \
-            --arg use_mock "${{ secrets.USE_MOCK }}" \
-            --arg dispatcher_url "${{ secrets.DISPATCHER_URL }}" \
-            --arg db_service_url "${{ secrets.DB_SERVICE_URL }}" \
-            --arg sync_interval_ms "${{ secrets.SYNC_INTERVAL_MS }}" \
-            --arg twitch_app_access_token "${{ secrets.TWITCH_APP_ACCESS_TOKEN }}" \
-            --arg twitch_webhook_secret "${{ secrets.TWITCH_WEBHOOK_SECRET }}" \
-            --arg twitch_issuer "${{ secrets.TWITCH_ISSUER }}" \
-            --arg public_eventsub_callback "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" \
-            --arg mysql_database "${{ secrets.MYSQL_DATABASE }}" \
-            --arg mysql_user "${{ secrets.MYSQL_USER }}" \
-            --arg mysql_password "${{ secrets.MYSQL_PASSWORD }}" \
-            --arg db_gateway_base_url "${{ secrets.DB_GATEWAY_BASE_URL }}" \
-            --arg redis_url "${{ secrets.REDIS_URL }}" \
-            --arg cache_ttl "${{ secrets.CACHE_TTL }}" \
-            --arg auth_service_url "${{ secrets.AUTH_SERVICE_URL }}" \
-            --arg front_url "${{ secrets.FRONT_URL }}" \
-            --arg jwt_secret "${{ secrets.JWT_SECRET }}" \
-            '{
-              NODE_ENV: $node_env,
-              GCP_PROJECT_ID: $gcp_project_id
-            } 
-            | if ($gcp_sa_key_content | length) > 0 then . + {GCP_SA_KEY: ($gcp_sa_key_content | rtrimstr("\n"))} else . end
-            | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
-            | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
-            | if ($gcp_bucket_name | length) > 0 then . + {GCP_BUCKET_NAME: $gcp_bucket_name} else . end
-            | if ($allowed_origins | length) > 0 then . + {ALLOWED_ORIGINS: $allowed_origins} else . end
-            | if ($use_mock | length) > 0 then . + {USE_MOCK: $use_mock} else . end
-            | if ($dispatcher_url | length) > 0 then . + {DISPATCHER_URL: $dispatcher_url} else . end
-            | if ($db_service_url | length) > 0 then . + {DB_SERVICE_URL: $db_service_url} else . end
-            | if ($sync_interval_ms | length) > 0 then . + {SYNC_INTERVAL_MS: $sync_interval_ms} else . end
-            | if ($twitch_app_access_token | length) > 0 then . + {TWITCH_APP_ACCESS_TOKEN: $twitch_app_access_token} else . end
-            | if ($twitch_webhook_secret | length) > 0 then . + {TWITCH_WEBHOOK_SECRET: $twitch_webhook_secret} else . end
-            | if ($twitch_issuer | length) > 0 then . + {TWITCH_ISSUER: $twitch_issuer} else . end
-            | if ($public_eventsub_callback | length) > 0 then . + {PUBLIC_EVENTSUB_CALLBACK: $public_eventsub_callback} else . end
-            | if ($mysql_database | length) > 0 then . + {MYSQL_DATABASE: $mysql_database} else . end
-            | if ($mysql_user | length) > 0 then . + {MYSQL_USER: $mysql_user} else . end
-            | if ($mysql_password | length) > 0 then . + {MYSQL_PASSWORD: $mysql_password} else . end
-            | if ($db_gateway_base_url | length) > 0 then . + {DB_GATEWAY_BASE_URL: $db_gateway_base_url} else . end
-            | if ($redis_url | length) > 0 then . + {REDIS_URL: $redis_url} else . end
-            | if ($cache_ttl | length) > 0 then . + {CACHE_TTL: $cache_ttl} else . end
-            | if ($auth_service_url | length) > 0 then . + {AUTH_SERVICE_URL: $auth_service_url} else . end
-            | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end
-            | if ($jwt_secret | length) > 0 then . + {JWT_SECRET: $jwt_secret} else . end' > "$ENV_FILE"
-          
-          # Clean up temporary file for GCP_SA_KEY
-          rm -f "$GCP_SA_KEY_FILE"
-          
-          # Debug: Show the generated JSON
-          echo "📄 Generated JSON file content:"
-          cat "$ENV_FILE"
-          echo ""
-          
-          # Check if GCP_SA_KEY is in the JSON
-          if jq -e '.GCP_SA_KEY' "$ENV_FILE" > /dev/null 2>&1; then
-            echo "✅ GCP_SA_KEY is present in the JSON file"
-            echo "📏 GCP_SA_KEY length: $(jq -r '.GCP_SA_KEY | length' "$ENV_FILE") characters"
-          else
-            echo "⚠️ GCP_SA_KEY is NOT present in the JSON file"
-            echo "🔍 Available keys in JSON: $(jq -r 'keys | join(", ")' "$ENV_FILE")"
-          fi
-          
-          # Validate JSON
-          if ! jq empty "$ENV_FILE" 2>/dev/null; then
-            echo "❌ Error: Generated JSON is invalid"
-            exit 1
-          fi
+            '{ NODE_ENV: $node_env, GCP_PROJECT_ID: $gcp_project_id }' > "$ENV_FILE"
           
           # Deploy to Cloud Run (service_type: development = allow-unauthenticated + default; non-development = front|bff|back_prive)
           ENVIRONMENT="${{ inputs.environment }}"
@@ -540,6 +454,7 @@ jobs:
               --timeout=900 \
               --allow-unauthenticated \
               --env-vars-file="$ENV_FILE" \
+              $SET_SECRETS_FLAG \
               --quiet
           else
             SERVICE_TYPE_TRIM=$(echo "$SERVICE_TYPE" | xargs)
@@ -585,6 +500,7 @@ jobs:
               --timeout=900 \
               $EXTRA_FLAGS \
               --env-vars-file="$ENV_FILE" \
+              $SET_SECRETS_FLAG \
               --quiet
           fi
           
@@ -722,13 +638,13 @@ jobs:
           TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
           PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-          AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
-          FRONT_URL: ${{ secrets.FRONT_URL }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
+          AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+          FRONT_URL: ${{ secrets.FRONT_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           case "$ENVIRONMENT" in
@@ -753,7 +669,7 @@ jobs:
             fi
           done <<< "$(echo "$REQUIRED_ENV_VARS" | tr ',' '\n')"
           if [ "$failed" -eq 1 ]; then
-            echo "Some required variables are missing or empty. Check repository secrets (e.g. PROD_DB_SERVICE_URL when passing DB_SERVICE_URL)."
+            echo "Some required variables are missing or empty. Check repository secrets."
             case "$ENVIRONMENT" in
               integration|production) exit 1 ;;
               *) echo "Environment $ENVIRONMENT: non-blocking." ; exit 0 ;;
