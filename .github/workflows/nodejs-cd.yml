@@ -374,6 +374,7 @@ jobs:
           echo "Image: $IMAGE_TAG"
           
           PROJECT="${{ secrets.GCP_PROJECT_ID }}"
+          SERVICE_NAME="${{ inputs.cloud-run-service-name }}"
           if [ -n "$GCP_SA_KEY_ENV" ]; then
             echo "✅ GCP_SA_KEY=[REDACTED - secret present]"
           else
@@ -420,7 +421,7 @@ jobs:
           for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url JWT_SECRET:jwt-secret; do
             v="${pair%%:*}"
             s="${pair#*:}"
-            [ "$v" = "ALLOWED_ORIGINS" ] && s="allowed-origins-$PROJECT"
+            [ "$v" = "ALLOWED_ORIGINS" ] && s="allowed-origins-$SERVICE_NAME"
             sync_var "$v" "$s"
             add_secret_arg "$v" "$s"
           done
