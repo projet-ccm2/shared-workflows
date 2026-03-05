@@ -483,10 +483,10 @@ jobs:
                 EXTRA_FLAGS="--ingress=all --allow-unauthenticated"
                 ;;
               bff)
-                EXTRA_FLAGS="--ingress=all --allow-unauthenticated --vpc-connector=$VPC_CONNECTOR_NAME"
+                EXTRA_FLAGS="--ingress=all --allow-unauthenticated --vpc-connector=$VPC_CONNECTOR_NAME --vpc-egress=all-traffic"
                 ;;
               back_prive)
-                EXTRA_FLAGS="--ingress=internal --no-allow-unauthenticated --vpc-connector=$VPC_CONNECTOR_NAME"
+                EXTRA_FLAGS="--ingress=internal --no-allow-unauthenticated --vpc-connector=$VPC_CONNECTOR_NAME --vpc-egress=all-traffic"
                 ;;
             esac
             echo "Deploying with service_type=$SERVICE_TYPE_TRIM: $EXTRA_FLAGS"
