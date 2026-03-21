@@ -90,7 +90,7 @@ CD workflow for Node.js projects with support for:
 - **Automatic Artifact Registry Management**: The workflow automatically checks if the specified Artifact Registry repository exists and creates it if it doesn't exist
 - **Parameter Validation**: Comprehensive validation of all required inputs and secrets before deployment
 - **Health Check**: Optional health check validation after deployment using auto-generated URL. For private services (`back_prive` when not in development), the workflow uses an identity token so the check can authenticate to Cloud Run (the deploy service account must have `roles/run.invoker` on the service).
-- **Environment Variables**: NODE_ENV and GCP_PROJECT_ID as plain env vars. All other vars are passed via GitHub secrets; the workflow syncs them to [Secret Manager](https://cloud.google.com/secret-manager) and Cloud Run reads from there—so they are not visible in the Cloud Run console. Convention: `JWT_SECRET` → `jwt-secret`, `MYSQL_PASSWORD` → `mysql-password`. The deploy service account (GCP_SA_KEY) must have `roles/secretmanager.admin` (or create/update permissions) to sync secrets.
+- **Environment Variables**: NODE_ENV and GCP_PROJECT_ID as plain env vars. All other vars are passed via GitHub secrets; the workflow syncs them to [Secret Manager](https://cloud.google.com/secret-manager) and Cloud Run reads from there—so they are not visible in the Cloud Run console. Naming: GitHub secret names map to Secret Manager IDs in kebab-case (e.g. `JWT_SECRET` → `jwt-secret`, `IA_SERVICE_URL` → `ia-service-url`, `NOTIFICATION_HANDLER_URL` → `notification-handler-url`). `ALLOWED_ORIGINS` is stored per service as `allowed-origins-<cloud-run-service-name>`. The deploy service account (GCP_SA_KEY) must have `roles/secretmanager.admin` (or create/update permissions) to sync secrets.
 - **Env vars validation (integration/production)**: When `environment` is `integration` or `production`, set `required_env_vars` (e.g. `DB_SERVICE_URL,JWT_SECRET`). The workflow validates that these GitHub secrets are set before deploy.
 - **Service type (FRONT \| BFF \| BACK_PRIVE)**: When `environment` is not `development`, you must set `service_type` to `front`, `bff`, or `back_prive`. This controls Cloud Run ingress, authentication, and VPC connector: **front** = public (ingress all, allow-unauthenticated); **bff** = public + VPC connector; **back_prive** = internal only (ingress internal, no allow-unauthenticated, VPC connector). Auth is handled in the app (e.g. Twitch OAuth), no IAP. The VPC connector name is hardcoded (`streamquest-vpc-2-conn`) for bff and back_prive; the workflow verifies it exists in the region before deploy. Load Balancer / NEG (without IAP) are configured outside this workflow (e.g. Terraform).
 - **Multi-tag Support**: Automatic generation of multiple Docker tags (branch, commit-sha, custom tag)
@@ -98,14 +98,40 @@ CD workflow for Node.js projects with support for:
 
 #### Secrets (GitHub)
 
-| Secret | Type | Required | Description |
-|--------|------|----------|-------------|
-| `GCP_SA_KEY` | string | **Yes** | Google Cloud Service Account key (JSON) for deploy auth |
-| `GCP_PROJECT_ID` | string | **Yes** | Google Cloud Project ID |
-| `DATABASE_URL` | string | No | Database connection URL |
-| `JWT_SECRET` | string | No | JWT signing secret |
-| `MYSQL_PASSWORD` | string | No | MySQL password |
-| ... | | No | See workflow for full list |
+**Required**
+
+| Secret | Type | Description |
+|--------|------|-------------|
+| `GCP_SA_KEY` | string | Google Cloud Service Account key (JSON) for deploy auth |
+| `GCP_PROJECT_ID` | string | Google Cloud Project ID |
+
+**Optional** (pass only what the app needs; each non-empty value is synced to Secret Manager, then mounted on Cloud Run under the same env var name)
+
+| Secret | Secret Manager ID | Description |
+|--------|-------------------|-------------|
+| `ALLOWED_ORIGINS` | `allowed-origins-<cloud-run-service-name>` | Allowed CORS / origin configuration |
+| `AUTH_SERVICE_URL` | `auth-service-url` | Auth service base URL |
+| `CACHE_TTL` | `cache-ttl` | Cache TTL |
+| `DATABASE_URL` | `database-url` | Database connection URL |
+| `DB_GATEWAY_BASE_URL` | `db-gateway-base-url` | DB gateway base URL |
+| `DB_SERVICE_URL` | `db-service-url` | DB / data service URL |
+| `DISPATCHER_URL` | `dispatcher-url` | Dispatcher service URL |
+| `FRONT_URL` | `front-url` | Front-end URL |
+| `GCP_BUCKET_NAME` | `gcp-bucket-name` | GCS bucket name |
+| `IA_SERVICE_URL` | `ia-service-url` | IA / AI service URL |
+| `JWT_SECRET` | `jwt-secret` | JWT signing secret |
+| `MYSQL_DATABASE` | `mysql-database` | MySQL database name |
+| `MYSQL_PASSWORD` | `mysql-password` | MySQL password |
+| `MYSQL_USER` | `mysql-user` | MySQL user |
+| `NOTIFICATION_HANDLER_URL` | `notification-handler-url` | Notification handler service URL |
+| `PUBLIC_EVENTSUB_CALLBACK` | `public-eventsub-callback` | Public EventSub callback URL |
+| `REDIS_URL` | `redis-url` | Redis connection URL |
+| `SYNC_INTERVAL_MS` | `sync-interval-ms` | Sync interval in milliseconds |
+| `TWITCH_APP_ACCESS_TOKEN` | `twitch-app-access-token` | Twitch app access token |
+| `TWITCH_CLIENT_ID` | `twitch-client-id` | Twitch client ID |
+| `TWITCH_ISSUER` | `twitch-issuer` | Twitch issuer |
+| `TWITCH_WEBHOOK_SECRET` | `twitch-webhook-secret` | Twitch webhook secret |
+| `USE_MOCK` | `use-mock` | Use mock backends / flags |
 
 The workflow syncs these GitHub secrets to Secret Manager before deploy (creates/updates secrets). Cloud Run reads from Secret Manager—values are not visible in the console. The deploy SA needs `roles/secretmanager.admin`; the Cloud Run service identity needs `roles/secretmanager.secretAccessor`.
 
@@ -165,8 +191,10 @@ jobs:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
+      IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
+      NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      # ... other optional secrets (synced to Secret Manager before deploy)
+      # ... other optional secrets (see table above; synced to Secret Manager before deploy)
 ```
 
 ### In a separate repository
@@ -221,7 +249,7 @@ jobs:
 
 ### CD workflow secrets
 
-Pass secrets via GitHub; the workflow syncs them to Secret Manager before deploy. Only include the ones your service needs.
+Pass secrets via GitHub; the workflow syncs them to Secret Manager before deploy. Only include the ones your service needs. For integration/production, list any mandatory vars in `required_env_vars` (e.g. `IA_SERVICE_URL,NOTIFICATION_HANDLER_URL`) so the workflow fails if a repository secret is missing or empty.
 
 ### Secret Manager sync
 

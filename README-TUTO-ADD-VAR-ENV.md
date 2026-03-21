@@ -43,6 +43,8 @@ jobs:
     secrets:
       GCP_SA_KEY: ${{ secrets.DEV_GCP_SA_KEY }}
       GCP_PROJECT_ID: ${{ secrets.DEV_GCP_PROJECT_ID }}  # ← Exemple : ajout de GCP_PROJECT_ID
+      IA_SERVICE_URL: ${{ secrets.DEV_IA_SERVICE_URL }}  # ← Exemple : URL de service (voir README shared-workflows)
+      NOTIFICATION_HANDLER_URL: ${{ secrets.DEV_NOTIFICATION_HANDLER_URL }}
       # Note : Si la variable change selon l'environnement, ajoutez le préfixe approprié (DEV_, INT_, PROD_)
       # Ne supprimez pas les secrets existants, ajoutez simplement le nouveau
 ```
@@ -68,13 +70,15 @@ Si vous avez besoin de `GCP_PROJECT_ID` qui change selon l'environnement, créez
 - `INT_GCP_PROJECT_ID`
 - `PROD_GCP_PROJECT_ID`
 
-### 3. Demander l'ajout de la variable dans le workflow réutilisable
+### 3. Workflow réutilisable (`shared-workflows`)
 
-Contactez l'équipe DevOps pour ajouter la variable d'environnement dans le workflow réutilisable (`shared-workflows/.github/workflows/nodejs-cd.yml`).
+Consultez le **README** du dépôt `shared-workflows` : le tableau *Secrets (GitHub)* liste les noms déjà pris en charge (ex. `IA_SERVICE_URL`, `NOTIFICATION_HANDLER_URL`). Pour ces secrets, il suffit des étapes 1 et 2 (passage dans votre workflow + secret GitHub)—aucune modification du dépôt `shared-workflows` n'est nécessaire.
+
+Si le nom dont vous avez besoin **n'y figure pas**, contactez l'équipe DevOps pour l'ajouter dans `shared-workflows/.github/workflows/nodejs-cd.yml` (déclaration `secrets:`, variables `env` du job de déploiement, boucle de synchro Secret Manager, job `validate-env`).
 
 **Important :**
-- Utilisez le nom de la variable **sans préfixe** (ex: `GCP_PROJECT_ID`, pas `DEV_GCP_PROJECT_ID`)
-- Vérifiez dans le README principal si la variable n'existe pas déjà avant de faire la demande
+- Côté workflow réutilisable, utilisez le nom de la variable **sans préfixe** d'environnement (ex: `GCP_PROJECT_ID`, pas `DEV_GCP_PROJECT_ID`)
+- Vérifiez le README avant toute demande d'évolution du dépôt partagé
 
 ### 4. Tester le déploiement
 

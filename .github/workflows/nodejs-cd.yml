@@ -133,6 +133,10 @@ on:
         required: false
       FRONT_URL:
         required: false
+      IA_SERVICE_URL:
+        required: false
+      NOTIFICATION_HANDLER_URL:
+        required: false
       JWT_SECRET:
         required: false
 
@@ -362,6 +366,8 @@ jobs:
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
           AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
           FRONT_URL: ${{ secrets.FRONT_URL }}
+          IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
+          NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           echo "🚀 Deploying to Cloud Run..."
@@ -418,7 +424,7 @@ jobs:
             SECRETS_ARGS="${SECRETS_ARGS}${var_name}=${secret_name}:latest"
           }
           
-          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url JWT_SECRET:jwt-secret; do
+          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret; do
             v="${pair%%:*}"
             s="${pair#*:}"
             [ "$v" = "ALLOWED_ORIGINS" ] && s="allowed-origins-$SERVICE_NAME"
@@ -647,6 +653,8 @@ jobs:
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
           AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
           FRONT_URL: ${{ secrets.FRONT_URL }}
+          IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
+          NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           case "$ENVIRONMENT" in
