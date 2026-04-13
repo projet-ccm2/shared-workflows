@@ -134,6 +134,7 @@ on:
       FRONT_URL:
         required: false
       ACHIEVEMENT_MANAGEMENT_SERVICE_URL:
+        required: false
       IA_SERVICE_URL:
         required: false
       NOTIFICATION_HANDLER_URL:
@@ -367,6 +368,7 @@ jobs:
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
           AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
           FRONT_URL: ${{ secrets.FRONT_URL }}
+          ACHIEVEMENT_MANAGEMENT_SERVICE_URL: ${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}
           IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
           NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
@@ -501,7 +503,7 @@ jobs:
             SECRETS_ARGS="${SECRETS_ARGS}${var_name}=${secret_name}:latest"
           }
           
-          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret; do
+          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url ACHIEVEMENT_MANAGEMENT_SERVICE_URL:achievement-management-service-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret; do
             v="${pair%%:*}"
             s="${pair#*:}"
             [ "$v" = "ALLOWED_ORIGINS" ] && s="allowed-origins-$SERVICE_NAME"
@@ -517,58 +519,7 @@ jobs:
           jq -n \
             --arg node_env "${{ inputs.environment }}" \
             --arg gcp_project_id "${{ secrets.GCP_PROJECT_ID }}" \
-<<<<<<< HEAD
-            --rawfile gcp_sa_key_content "$GCP_SA_KEY_FILE" \
-            --arg database_url "${{ secrets.DATABASE_URL }}" \
-            --arg twitch_client_id "${{ secrets.TWITCH_CLIENT_ID }}" \
-            --arg gcp_bucket_name "${{ secrets.GCP_BUCKET_NAME }}" \
-            --arg allowed_origins "${{ secrets.ALLOWED_ORIGINS }}" \
-            --arg use_mock "${{ secrets.USE_MOCK }}" \
-            --arg dispatcher_url "${{ secrets.DISPATCHER_URL }}" \
-            --arg db_service_url "${{ secrets.DB_SERVICE_URL }}" \
-            --arg sync_interval_ms "${{ secrets.SYNC_INTERVAL_MS }}" \
-            --arg twitch_app_access_token "${{ secrets.TWITCH_APP_ACCESS_TOKEN }}" \
-            --arg twitch_webhook_secret "${{ secrets.TWITCH_WEBHOOK_SECRET }}" \
-            --arg twitch_issuer "${{ secrets.TWITCH_ISSUER }}" \
-            --arg public_eventsub_callback "${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}" \
-            --arg mysql_database "${{ secrets.MYSQL_DATABASE }}" \
-            --arg mysql_user "${{ secrets.MYSQL_USER }}" \
-            --arg mysql_password "${{ secrets.MYSQL_PASSWORD }}" \
-            --arg db_gateway_base_url "${{ secrets.DB_GATEWAY_BASE_URL }}" \
-            --arg redis_url "${{ secrets.REDIS_URL }}" \
-            --arg cache_ttl "${{ secrets.CACHE_TTL }}" \
-            --arg auth_service_url "${{ secrets.AUTH_SERVICE_URL }}" \
-            --arg front_url "${{ secrets.FRONT_URL }}" \
-            --arg achievement_management_service_url "${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}" \
-            '{
-              NODE_ENV: $node_env,
-              GCP_PROJECT_ID: $gcp_project_id
-            } 
-            | if ($gcp_sa_key_content | length) > 0 then . + {GCP_SA_KEY: ($gcp_sa_key_content | rtrimstr("\n"))} else . end
-            | if ($database_url | length) > 0 then . + {DATABASE_URL: $database_url} else . end
-            | if ($twitch_client_id | length) > 0 then . + {TWITCH_CLIENT_ID: $twitch_client_id} else . end
-            | if ($gcp_bucket_name | length) > 0 then . + {GCP_BUCKET_NAME: $gcp_bucket_name} else . end
-            | if ($allowed_origins | length) > 0 then . + {ALLOWED_ORIGINS: $allowed_origins} else . end
-            | if ($use_mock | length) > 0 then . + {USE_MOCK: $use_mock} else . end
-            | if ($dispatcher_url | length) > 0 then . + {DISPATCHER_URL: $dispatcher_url} else . end
-            | if ($db_service_url | length) > 0 then . + {DB_SERVICE_URL: $db_service_url} else . end
-            | if ($sync_interval_ms | length) > 0 then . + {SYNC_INTERVAL_MS: $sync_interval_ms} else . end
-            | if ($twitch_app_access_token | length) > 0 then . + {TWITCH_APP_ACCESS_TOKEN: $twitch_app_access_token} else . end
-            | if ($twitch_webhook_secret | length) > 0 then . + {TWITCH_WEBHOOK_SECRET: $twitch_webhook_secret} else . end
-            | if ($twitch_issuer | length) > 0 then . + {TWITCH_ISSUER: $twitch_issuer} else . end
-            | if ($public_eventsub_callback | length) > 0 then . + {PUBLIC_EVENTSUB_CALLBACK: $public_eventsub_callback} else . end
-            | if ($mysql_database | length) > 0 then . + {MYSQL_DATABASE: $mysql_database} else . end
-            | if ($mysql_user | length) > 0 then . + {MYSQL_USER: $mysql_user} else . end
-            | if ($mysql_password | length) > 0 then . + {MYSQL_PASSWORD: $mysql_password} else . end
-            | if ($db_gateway_base_url | length) > 0 then . + {DB_GATEWAY_BASE_URL: $db_gateway_base_url} else . end
-            | if ($redis_url | length) > 0 then . + {REDIS_URL: $redis_url} else . end
-            | if ($cache_ttl | length) > 0 then . + {CACHE_TTL: $cache_ttl} else . end
-            | if ($auth_service_url | length) > 0 then . + {AUTH_SERVICE_URL: $auth_service_url} else . end
-            | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end
-            | if ($achievement_management_service_url | length) > 0 then . + {ACHIEVEMENT_MANAGEMENT_SERVICE_URL: $achievement_management_service_url} else . end' > "$ENV_FILE"
-=======
             '{ NODE_ENV: $node_env, GCP_PROJECT_ID: $gcp_project_id }' > "$ENV_FILE"
->>>>>>> ae68c75f85e6e06c5e22127178041b5bf0512a97
           
           # Deploy to Cloud Run (service_type: development = allow-unauthenticated + default; non-development = front|bff|back_prive)
           ENVIRONMENT="${{ inputs.environment }}"
@@ -781,6 +732,7 @@ jobs:
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
           AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
           FRONT_URL: ${{ secrets.FRONT_URL }}
+          ACHIEVEMENT_MANAGEMENT_SERVICE_URL: ${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}
           IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
           NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
