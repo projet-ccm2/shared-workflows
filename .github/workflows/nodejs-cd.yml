@@ -45,6 +45,11 @@ on:
         required: false
         type: string
         default: '60'
+      health-check-initial-delay:
+        description: Seconds to wait before first health check (e.g. for new revision cold start). Use 0 to skip.
+        required: false
+        type: string
+        default: '0'
       gcp-region:
         required: false
         type: string
@@ -75,6 +80,14 @@ on:
       artifact-registry-repository:
         required: true
         type: string
+      required_env_vars:
+        required: false
+        type: string
+        description: Comma-separated list of env var names that must be non-empty when environment is integration or production (e.g. DB_SERVICE_URL,DATABASE_URL). Obligatory when environment is integration or production.
+      service_type:
+        required: false
+        type: string
+        description: "Cloud Run type: front | bff | back_prive (validated in deploy step when not development). Required when environment is not development; must be exactly one of front, bff, back_prive. Ignored when environment is development."
     secrets:
       GCP_SA_KEY:
         required: true
@@ -121,6 +134,11 @@ on:
       FRONT_URL:
         required: false
       ACHIEVEMENT_MANAGEMENT_SERVICE_URL:
+      IA_SERVICE_URL:
+        required: false
+      NOTIFICATION_HANDLER_URL:
+        required: false
+      JWT_SECRET:
         required: false
 
 jobs:
@@ -329,6 +347,29 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           GCP_SA_KEY_ENV: ${{ secrets.GCP_SA_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          USE_MOCK: ${{ secrets.USE_MOCK }}
+          DISPATCHER_URL: ${{ secrets.DISPATCHER_URL }}
+          DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
+          SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
+          TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
+          TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
+          TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
+          PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          CACHE_TTL: ${{ secrets.CACHE_TTL }}
+          AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+          FRONT_URL: ${{ secrets.FRONT_URL }}
+          IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
+          NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           echo "🚀 Deploying to Cloud Run..."
           
@@ -339,12 +380,8 @@ jobs:
           
           echo "Image: $IMAGE_TAG"
           
-          # Debug Environment Variables
-          echo "🔍 Environment variables to be set:"
-          echo "NODE_ENV=${{ inputs.environment }}"
-          echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
-          
-          # Check if GCP_SA_KEY is set
+          PROJECT="${{ secrets.GCP_PROJECT_ID }}"
+          SERVICE_NAME="${{ inputs.cloud-run-service-name }}"
           if [ -n "$GCP_SA_KEY_ENV" ]; then
             echo "✅ GCP_SA_KEY=[REDACTED - secret present]"
           else
@@ -425,16 +462,62 @@ jobs:
             echo "📏 GCP_SA_KEY file size: $(wc -c < "$GCP_SA_KEY_FILE") bytes"
           else
             echo "⚠️ GCP_SA_KEY secret is empty or not set"
-            touch "$GCP_SA_KEY_FILE"
           fi
           
-          # Create temporary JSON file for environment variables using jq
-          ENV_FILE=$(mktemp)
+          # Sync GitHub secrets to Secret Manager (create/update), then inject into Cloud Run (not visible in console)
+          sync_var() {
+            local var_name=$1
+            local secret_name=$2
+            local val
+            if [ "$var_name" = "GCP_SA_KEY" ]; then
+              val="$GCP_SA_KEY_ENV"
+            else
+              val="${!var_name}"
+            fi
+            [ -z "$val" ] && return 0
+            echo "🔐 Syncing $var_name -> Secret Manager ($secret_name)"
+            if ! gcloud secrets describe "$secret_name" --project="$PROJECT" 2>/dev/null; then
+              gcloud secrets create "$secret_name" --replication-policy=automatic --project="$PROJECT"
+            fi
+            if [ "$var_name" = "GCP_SA_KEY" ]; then
+              printf '%s' "$val" | gcloud secrets versions add "$secret_name" --data-file=- --project="$PROJECT"
+            else
+              echo -n "$val" | gcloud secrets versions add "$secret_name" --data-file=- --project="$PROJECT"
+            fi
+          }
           
-          # Build JSON object with jq
+          SECRETS_ARGS=""
+          add_secret_arg() {
+            local var_name=$1
+            local secret_name=$2
+            local val
+            if [ "$var_name" = "GCP_SA_KEY" ]; then
+              val="$GCP_SA_KEY_ENV"
+            else
+              val="${!var_name}"
+            fi
+            [ -z "$val" ] && return 0
+            [ -n "$SECRETS_ARGS" ] && SECRETS_ARGS="$SECRETS_ARGS,"
+            SECRETS_ARGS="${SECRETS_ARGS}${var_name}=${secret_name}:latest"
+          }
+          
+          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret; do
+            v="${pair%%:*}"
+            s="${pair#*:}"
+            [ "$v" = "ALLOWED_ORIGINS" ] && s="allowed-origins-$SERVICE_NAME"
+            sync_var "$v" "$s"
+            add_secret_arg "$v" "$s"
+          done
+          
+          SET_SECRETS_FLAG=""
+          [ -n "$SECRETS_ARGS" ] && SET_SECRETS_FLAG="--set-secrets=$SECRETS_ARGS"
+          
+          # Env file: only NODE_ENV and GCP_PROJECT_ID (non-sensitive)
+          ENV_FILE=$(mktemp)
           jq -n \
             --arg node_env "${{ inputs.environment }}" \
             --arg gcp_project_id "${{ secrets.GCP_PROJECT_ID }}" \
+<<<<<<< HEAD
             --rawfile gcp_sa_key_content "$GCP_SA_KEY_FILE" \
             --arg database_url "${{ secrets.DATABASE_URL }}" \
             --arg twitch_client_id "${{ secrets.TWITCH_CLIENT_ID }}" \
@@ -483,51 +566,93 @@ jobs:
             | if ($auth_service_url | length) > 0 then . + {AUTH_SERVICE_URL: $auth_service_url} else . end
             | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end
             | if ($achievement_management_service_url | length) > 0 then . + {ACHIEVEMENT_MANAGEMENT_SERVICE_URL: $achievement_management_service_url} else . end' > "$ENV_FILE"
+=======
+            '{ NODE_ENV: $node_env, GCP_PROJECT_ID: $gcp_project_id }' > "$ENV_FILE"
+>>>>>>> ae68c75f85e6e06c5e22127178041b5bf0512a97
           
-          # Clean up temporary file for GCP_SA_KEY
-          rm -f "$GCP_SA_KEY_FILE"
+          # Deploy to Cloud Run (service_type: development = allow-unauthenticated + default; non-development = front|bff|back_prive)
+          ENVIRONMENT="${{ inputs.environment }}"
+          SERVICE_TYPE="${{ inputs.service_type }}"
+          GCP_REGION="${{ inputs.gcp-region }}"
+          VPC_CONNECTOR_NAME="streamquest-vpc-2-conn"
           
-          # Debug: Show the generated JSON
-          echo "📄 Generated JSON file content:"
-          cat "$ENV_FILE"
-          echo ""
-          
-          # Check if GCP_SA_KEY is in the JSON
-          if jq -e '.GCP_SA_KEY' "$ENV_FILE" > /dev/null 2>&1; then
-            echo "✅ GCP_SA_KEY is present in the JSON file"
-            echo "📏 GCP_SA_KEY length: $(jq -r '.GCP_SA_KEY | length' "$ENV_FILE") characters"
+          if [ "$ENVIRONMENT" = "development" ]; then
+            echo "Environment is development: using allow-unauthenticated and default ingress (service_type ignored)."
+            gcloud run deploy ${{ inputs.cloud-run-service-name }} \
+              --image=$IMAGE_TAG \
+              --platform=managed \
+              --region=$GCP_REGION \
+              --port=${{ inputs.cloud-run-port }} \
+              --memory=${{ inputs.cloud-run-memory }} \
+              --cpu=${{ inputs.cloud-run-cpu }} \
+              --max-instances=${{ inputs.cloud-run-max-instances }} \
+              --min-instances=${{ inputs.cloud-run-min-instances }} \
+              --timeout=900 \
+              --allow-unauthenticated \
+              --env-vars-file="$ENV_FILE" \
+              $SET_SECRETS_FLAG \
+              --quiet
           else
-            echo "⚠️ GCP_SA_KEY is NOT present in the JSON file"
-            echo "🔍 Available keys in JSON: $(jq -r 'keys | join(", ")' "$ENV_FILE")"
+            SERVICE_TYPE_TRIM=$(echo "$SERVICE_TYPE" | xargs)
+            if [ -z "$SERVICE_TYPE_TRIM" ]; then
+              echo "service_type is required when environment is not development."
+              exit 1
+            fi
+            case "$SERVICE_TYPE_TRIM" in
+              front|bff|back_prive) ;;
+              *)
+                echo "service_type must be one of: front, bff, back_prive."
+                exit 1
+                ;;
+            esac
+            if [ "$SERVICE_TYPE_TRIM" = "bff" ] || [ "$SERVICE_TYPE_TRIM" = "back_prive" ]; then
+              if ! gcloud compute networks vpc-access connectors describe "$VPC_CONNECTOR_NAME" --region="$GCP_REGION" --quiet 2>/dev/null; then
+                echo "Appelez le devops car le VPC [$VPC_CONNECTOR_NAME] n'existe pas."
+                exit 1
+              fi
+            fi
+            EXTRA_FLAGS=""
+            case "$SERVICE_TYPE_TRIM" in
+              front)
+                EXTRA_FLAGS="--ingress=all --allow-unauthenticated"
+                ;;
+              bff)
+                EXTRA_FLAGS="--ingress=all --allow-unauthenticated --vpc-connector=$VPC_CONNECTOR_NAME --vpc-egress=all-traffic"
+                ;;
+              back_prive)
+                EXTRA_FLAGS="--ingress=internal --no-allow-unauthenticated --vpc-connector=$VPC_CONNECTOR_NAME --vpc-egress=all-traffic"
+                ;;
+            esac
+            echo "Deploying with service_type=$SERVICE_TYPE_TRIM: $EXTRA_FLAGS"
+            gcloud run deploy ${{ inputs.cloud-run-service-name }} \
+              --image=$IMAGE_TAG \
+              --platform=managed \
+              --region=$GCP_REGION \
+              --port=${{ inputs.cloud-run-port }} \
+              --memory=${{ inputs.cloud-run-memory }} \
+              --cpu=${{ inputs.cloud-run-cpu }} \
+              --max-instances=${{ inputs.cloud-run-max-instances }} \
+              --min-instances=${{ inputs.cloud-run-min-instances }} \
+              --timeout=900 \
+              $EXTRA_FLAGS \
+              --env-vars-file="$ENV_FILE" \
+              $SET_SECRETS_FLAG \
+              --quiet
           fi
-          
-          # Validate JSON
-          if ! jq empty "$ENV_FILE" 2>/dev/null; then
-            echo "❌ Error: Generated JSON is invalid"
-            exit 1
-          fi
-          
-          # Deploy to Cloud Run
-          gcloud run deploy ${{ inputs.cloud-run-service-name }} \
-            --image=$IMAGE_TAG \
-            --platform=managed \
-            --region=${{ inputs.gcp-region }} \
-            --port=${{ inputs.cloud-run-port }} \
-            --memory=${{ inputs.cloud-run-memory }} \
-            --cpu=${{ inputs.cloud-run-cpu }} \
-            --max-instances=${{ inputs.cloud-run-max-instances }} \
-            --min-instances=${{ inputs.cloud-run-min-instances }} \
-            --timeout=900 \
-            --allow-unauthenticated \
-            --env-vars-file="$ENV_FILE" \
-            --quiet
           
           # Clean up temporary file
           rm -f "$ENV_FILE"
 
       - name: Health Check
         run: |
+          set +e
           if [ -n "${{ inputs.health-check-url }}" ]; then
+            ENVIRONMENT="${{ inputs.environment }}"
+            SERVICE_TYPE="${{ inputs.service_type }}"
+            SERVICE_TYPE_TRIM=$(echo "$SERVICE_TYPE" | xargs)
+            if [ "$ENVIRONMENT" != "development" ] && [ "$SERVICE_TYPE_TRIM" = "back_prive" ]; then
+              echo "⏭️ Skipping health check: private service (back_prive) not reachable from CI"
+            else
             echo "🔍 Running health check..."
             
             # Get the Cloud Run service URL
@@ -544,18 +669,72 @@ jobs:
             HEALTH_CHECK_URL="$SERVICE_URL${{ inputs.health-check-url }}"
             echo "Health check URL: $HEALTH_CHECK_URL"
             
-            # Test the URL
-            if curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
-              echo "✅ Health check passed"
-            else
-              echo "⏳ Service not ready yet, waiting..."
-              timeout ${{ inputs.health-check-timeout }} bash -c '
-                until curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
-                  echo "Waiting for service to be ready..."
-                  sleep 10
-                done
+            # Optional delay before first check (e.g. new revision cold start)
+            DELAY="${{ inputs.health-check-initial-delay }}"
+            if [ -n "$DELAY" ] && [ "$DELAY" -gt 0 ] 2>/dev/null; then
+              echo "Waiting ${DELAY}s before first health check (revision startup)..."
+              sleep "$DELAY"
+            fi
+            
+            # Use identity token for private service (back_prive) when not in development
+            ENVIRONMENT="${{ inputs.environment }}"
+            SERVICE_TYPE="${{ inputs.service_type }}"
+            SERVICE_TYPE_TRIM=$(echo "$SERVICE_TYPE" | xargs)
+            USE_TOKEN="false"
+            if [ "$ENVIRONMENT" != "development" ] && [ "$SERVICE_TYPE_TRIM" = "back_prive" ]; then
+              USE_TOKEN="true"
+              echo "Private service (back_prive): using identity token for health check."
+            fi
+            
+            HEALTH_EXIT=0
+            if [ "$USE_TOKEN" = "true" ]; then
+              IDENTITY_TOKEN=$(gcloud auth print-identity-token --audiences="$SERVICE_URL")
+              export IDENTITY_TOKEN
+              if curl -s -f -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
                 echo "✅ Health check passed"
-              '
+              else
+                echo "⏳ Service not ready yet, waiting..."
+                timeout ${{ inputs.health-check-timeout }} bash -c '
+                  until curl -s -f -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
+                    echo "Waiting for service to be ready..."
+                    sleep 10
+                  done
+                  echo "✅ Health check passed"
+                '
+                HEALTH_EXIT=$?
+              fi
+            else
+              if curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
+                echo "✅ Health check passed"
+              else
+                echo "⏳ Service not ready yet, waiting..."
+                timeout ${{ inputs.health-check-timeout }} bash -c '
+                  until curl -s -f "$HEALTH_CHECK_URL" > /dev/null 2>&1; do
+                    echo "Waiting for service to be ready..."
+                    sleep 10
+                  done
+                  echo "✅ Health check passed"
+                '
+                HEALTH_EXIT=$?
+              fi
+            fi
+            
+            # Always display result of last health check request (even on timeout/failure)
+            echo ""
+            echo "Last health check request: $HEALTH_CHECK_URL"
+            if [ "$USE_TOKEN" = "true" ]; then
+              RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $IDENTITY_TOKEN" "$HEALTH_CHECK_URL" 2>&1)
+            else
+              RESPONSE=$(curl -s -w "\n%{http_code}" "$HEALTH_CHECK_URL" 2>&1)
+            fi
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            echo "HTTP status: $HTTP_CODE"
+            echo "Response body: $BODY"
+            if [ "$HEALTH_EXIT" -ne 0 ]; then
+              echo "Health check failed (exit code: $HEALTH_EXIT, 124 = timeout)."
+              exit $HEALTH_EXIT
+            fi
             fi
           else
             echo "⚠️ No health check route provided, skipping health check"
@@ -568,3 +747,70 @@ jobs:
           echo "Image: ${{ needs.build-and-push.outputs.image-tags }}"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
+
+  validate-env:
+    name: Validate required env vars
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: needs.deploy.result == 'success'
+    steps:
+      - name: Check required env vars
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          REQUIRED_ENV_VARS: ${{ inputs.required_env_vars }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          USE_MOCK: ${{ secrets.USE_MOCK }}
+          DISPATCHER_URL: ${{ secrets.DISPATCHER_URL }}
+          DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
+          SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
+          TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
+          TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
+          TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
+          PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          CACHE_TTL: ${{ secrets.CACHE_TTL }}
+          AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
+          FRONT_URL: ${{ secrets.FRONT_URL }}
+          IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
+          NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          case "$ENVIRONMENT" in
+            integration|production)
+              if [ -z "$(echo "$REQUIRED_ENV_VARS" | xargs)" ]; then
+                echo "required_env_vars is required when environment is integration or production."
+                exit 1
+              fi
+              ;;
+          esac
+          echo "Variables listed in required_env_vars:"
+          failed=0
+          while IFS= read -r var; do
+            var=$(echo "$var" | xargs)
+            [ -z "$var" ] && continue
+            val="${!var}"
+            if [ -z "$val" ]; then
+              echo "  $var : empty"
+              failed=1
+            else
+              echo "  $var : set"
+            fi
+          done <<< "$(echo "$REQUIRED_ENV_VARS" | tr ',' '\n')"
+          if [ "$failed" -eq 1 ]; then
+            echo "Some required variables are missing or empty. Check repository secrets."
+            case "$ENVIRONMENT" in
+              integration|production) exit 1 ;;
+              *) echo "Environment $ENVIRONMENT: non-blocking." ; exit 0 ;;
+            esac
+          fi
+          echo "All required variables are set."
