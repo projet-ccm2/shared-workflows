@@ -118,6 +118,7 @@ CD workflow for Node.js projects with support for:
 | `CACHE_TTL` | string | No | Cache TTL (time-to-live) |
 | `AUTH_SERVICE_URL` | string | No | Authentication service base URL |
 | `FRONT_URL` | string | No | Frontend application URL |
+| `ACHIEVEMENT_MANAGEMENT_SERVICE_URL` | string | No | Achievement management service URL |
 
 ## Usage
 
@@ -194,6 +195,7 @@ jobs:
       CACHE_TTL: ${{ secrets.CACHE_TTL }}
       AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
       FRONT_URL: ${{ secrets.FRONT_URL }}
+      ACHIEVEMENT_MANAGEMENT_SERVICE_URL: ${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}
 ```
 
 ### In a separate repository

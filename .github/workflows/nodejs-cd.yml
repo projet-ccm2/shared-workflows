@@ -120,6 +120,8 @@ on:
         required: false
       FRONT_URL:
         required: false
+      ACHIEVEMENT_MANAGEMENT_SERVICE_URL:
+        required: false
 
 jobs:
   build-and-push:
@@ -409,6 +411,9 @@ jobs:
           if [ -n "${{ secrets.FRONT_URL }}" ]; then
             echo "FRONT_URL=${{ secrets.FRONT_URL }}"
           fi
+          if [ -n "${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}" ]; then
+            echo "ACHIEVEMENT_MANAGEMENT_SERVICE_URL=${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}"
+          fi
           
           
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -451,6 +456,7 @@ jobs:
             --arg cache_ttl "${{ secrets.CACHE_TTL }}" \
             --arg auth_service_url "${{ secrets.AUTH_SERVICE_URL }}" \
             --arg front_url "${{ secrets.FRONT_URL }}" \
+            --arg achievement_management_service_url "${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}" \
             '{
               NODE_ENV: $node_env,
               GCP_PROJECT_ID: $gcp_project_id
@@ -475,7 +481,8 @@ jobs:
             | if ($redis_url | length) > 0 then . + {REDIS_URL: $redis_url} else . end
             | if ($cache_ttl | length) > 0 then . + {CACHE_TTL: $cache_ttl} else . end
             | if ($auth_service_url | length) > 0 then . + {AUTH_SERVICE_URL: $auth_service_url} else . end
-            | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end' > "$ENV_FILE"
+            | if ($front_url | length) > 0 then . + {FRONT_URL: $front_url} else . end
+            | if ($achievement_management_service_url | length) > 0 then . + {ACHIEVEMENT_MANAGEMENT_SERVICE_URL: $achievement_management_service_url} else . end' > "$ENV_FILE"
           
           # Clean up temporary file for GCP_SA_KEY
           rm -f "$GCP_SA_KEY_FILE"
