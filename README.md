@@ -120,6 +120,7 @@ CD workflow for Node.js projects with support for:
 | `DB_SERVICE_URL` | `db-service-url` | DB / data service URL |
 | `DISPATCHER_URL` | `dispatcher-url` | Dispatcher service URL |
 | `FRONT_URL` | `front-url` | Front-end URL |
+| `GEMINI_API_KEY` | `gemini-api-key` | Gemini API key |
 | `GCP_BUCKET_NAME` | `gcp-bucket-name` | GCS bucket name |
 | `IA_SERVICE_URL` | `ia-service-url` | IA / AI service URL |
 | `JWT_SECRET` | `jwt-secret` | JWT signing secret |

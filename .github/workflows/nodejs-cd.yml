@@ -147,6 +147,8 @@ on:
         required: false
       BUCKET_MANAGER_URL:
         required: false
+      GEMINI_API_KEY:
+        required: false
 
 jobs:
   build-and-push:
@@ -381,6 +383,7 @@ jobs:
           BUCKET_MANAGER_SERVICE_URL: ${{ secrets.BUCKET_MANAGER_SERVICE_URL }}
           TWITCH_EXTENSION_IDS: ${{ secrets.TWITCH_EXTENSION_IDS }}
           BUCKET_MANAGER_URL: ${{ secrets.BUCKET_MANAGER_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           echo "🚀 Deploying to Cloud Run..."
           
@@ -471,6 +474,9 @@ jobs:
           if [ -n "${{ secrets.BUCKET_MANAGER_URL }}" ]; then
             echo "BUCKET_MANAGER_URL=${{ secrets.BUCKET_MANAGER_URL }}"
           fi
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "GEMINI_API_KEY=[REDACTED - secret present]"
+          fi
 
 
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -521,7 +527,7 @@ jobs:
             SECRETS_ARGS="${SECRETS_ARGS}${var_name}=${secret_name}:latest"
           }
           
-          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url ACHIEVEMENT_MANAGEMENT_SERVICE_URL:achievement-management-service-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret BUCKET_MANAGER_SERVICE_URL:bucket-manager-service-url TWITCH_EXTENSION_IDS:twitch-extension-ids BUCKET_MANAGER_URL:bucket-manager-url; do
+          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url ACHIEVEMENT_MANAGEMENT_SERVICE_URL:achievement-management-service-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret BUCKET_MANAGER_SERVICE_URL:bucket-manager-service-url TWITCH_EXTENSION_IDS:twitch-extension-ids BUCKET_MANAGER_URL:bucket-manager-url GEMINI_API_KEY:gemini-api-key; do
             v="${pair%%:*}"
             s="${pair#*:}"
             [ "$v" = "ALLOWED_ORIGINS" ] && s="allowed-origins-$SERVICE_NAME"
@@ -757,6 +763,7 @@ jobs:
           BUCKET_MANAGER_SERVICE_URL: ${{ secrets.BUCKET_MANAGER_SERVICE_URL }}
           TWITCH_EXTENSION_IDS: ${{ secrets.TWITCH_EXTENSION_IDS }}
           BUCKET_MANAGER_URL: ${{ secrets.BUCKET_MANAGER_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           case "$ENVIRONMENT" in
             integration|production)
