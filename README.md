@@ -111,6 +111,7 @@ CD workflow for Node.js projects with support for:
 |--------|-------------------|-------------|
 | `ACHIEVEMENT_MANAGEMENT_SERVICE_URL` | `achievement-management-service-url` | Achievement management service URL |
 | `BUCKET_MANAGER_SERVICE_URL` | `bucket-manager-service-url` | Bucket manager service URL |
+| `BUCKET_MANAGER_URL` | `bucket-manager-url` | Bucket manager URL |
 | `ALLOWED_ORIGINS` | `allowed-origins-<cloud-run-service-name>` | Allowed CORS / origin configuration |
 | `AUTH_SERVICE_URL` | `auth-service-url` | Auth service base URL |
 | `CACHE_TTL` | `cache-ttl` | Cache TTL |
