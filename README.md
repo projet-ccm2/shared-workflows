@@ -133,6 +133,7 @@ CD workflow for Node.js projects with support for:
 | `TWITCH_CLIENT_ID` | `twitch-client-id` | Twitch client ID |
 | `TWITCH_ISSUER` | `twitch-issuer` | Twitch issuer |
 | `TWITCH_WEBHOOK_SECRET` | `twitch-webhook-secret` | Twitch webhook secret |
+| `TWITCH_EXTENSION_IDS` | `twitch-extension-ids` | Twitch extension IDs |
 | `USE_MOCK` | `use-mock` | Use mock backends / flags |
 
 The workflow syncs these GitHub secrets to Secret Manager before deploy (creates/updates secrets). Cloud Run reads from Secret Manager—values are not visible in the console. The deploy SA needs `roles/secretmanager.admin`; the Cloud Run service identity needs `roles/secretmanager.secretAccessor`.
