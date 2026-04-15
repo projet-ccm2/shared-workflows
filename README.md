@@ -110,6 +110,7 @@ CD workflow for Node.js projects with support for:
 | Secret | Secret Manager ID | Description |
 |--------|-------------------|-------------|
 | `ACHIEVEMENT_MANAGEMENT_SERVICE_URL` | `achievement-management-service-url` | Achievement management service URL |
+| `BUCKET_MANAGER_SERVICE_URL` | `bucket-manager-service-url` | Bucket manager service URL |
 | `ALLOWED_ORIGINS` | `allowed-origins-<cloud-run-service-name>` | Allowed CORS / origin configuration |
 | `AUTH_SERVICE_URL` | `auth-service-url` | Auth service base URL |
 | `CACHE_TTL` | `cache-ttl` | Cache TTL |
@@ -192,27 +193,11 @@ jobs:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DB_SERVICE_URL: ${{ secrets.DB_SERVICE_URL }}
-<<<<<<< HEAD
-      SYNC_INTERVAL_MS: ${{ secrets.SYNC_INTERVAL_MS }}
-      TWITCH_APP_ACCESS_TOKEN: ${{ secrets.TWITCH_APP_ACCESS_TOKEN }}
-      TWITCH_WEBHOOK_SECRET: ${{ secrets.TWITCH_WEBHOOK_SECRET }}
-      TWITCH_ISSUER: ${{ secrets.TWITCH_ISSUER }}
-      PUBLIC_EVENTSUB_CALLBACK: ${{ secrets.PUBLIC_EVENTSUB_CALLBACK }}
-      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-      MYSQL_USER: ${{ secrets.MYSQL_USER }}
-      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-      DB_GATEWAY_BASE_URL: ${{ secrets.DB_GATEWAY_BASE_URL }}
-      REDIS_URL: ${{ secrets.REDIS_URL }}
-      CACHE_TTL: ${{ secrets.CACHE_TTL }}
-      AUTH_SERVICE_URL: ${{ secrets.AUTH_SERVICE_URL }}
-      FRONT_URL: ${{ secrets.FRONT_URL }}
-      ACHIEVEMENT_MANAGEMENT_SERVICE_URL: ${{ secrets.ACHIEVEMENT_MANAGEMENT_SERVICE_URL }}
-=======
       IA_SERVICE_URL: ${{ secrets.IA_SERVICE_URL }}
       NOTIFICATION_HANDLER_URL: ${{ secrets.NOTIFICATION_HANDLER_URL }}
+      BUCKET_MANAGER_SERVICE_URL: ${{ secrets.BUCKET_MANAGER_SERVICE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       # ... other optional secrets (see table above; synced to Secret Manager before deploy)
->>>>>>> ae68c75f85e6e06c5e22127178041b5bf0512a97
 ```
 
 ### In a separate repository
