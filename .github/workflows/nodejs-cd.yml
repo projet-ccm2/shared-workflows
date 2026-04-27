@@ -163,6 +163,10 @@ on:
         required: false
       CHAT_API_KEY:
         required: false
+      TWITCH_LISTENER_URL:
+        required: false
+      DISCORD_NOTIF_URL:
+        required: false
 
 jobs:
   build-and-push:
@@ -405,6 +409,8 @@ jobs:
           TWITCH_IRC_CLIENT_ID: ${{ secrets.TWITCH_IRC_CLIENT_ID }}
           TWITCH_IRC_CLIENT_SECRET: ${{ secrets.TWITCH_IRC_CLIENT_SECRET }}
           CHAT_API_KEY: ${{ secrets.CHAT_API_KEY }}
+          TWITCH_LISTENER_URL: ${{ secrets.TWITCH_LISTENER_URL }}
+          DISCORD_NOTIF_URL: ${{ secrets.DISCORD_NOTIF_URL }}
         run: |
           echo "🚀 Deploying to Cloud Run..."
           
@@ -519,6 +525,12 @@ jobs:
           if [ -n "${{ secrets.CHAT_API_KEY }}" ]; then
             echo "CHAT_API_KEY=[REDACTED - secret present]"
           fi
+          if [ -n "${{ secrets.TWITCH_LISTENER_URL }}" ]; then
+            echo "TWITCH_LISTENER_URL=${{ secrets.TWITCH_LISTENER_URL }}"
+          fi
+          if [ -n "${{ secrets.DISCORD_NOTIF_URL }}" ]; then
+            echo "DISCORD_NOTIF_URL=${{ secrets.DISCORD_NOTIF_URL }}"
+          fi
 
 
           # Create temporary file for GCP_SA_KEY to handle multiline JSON safely
@@ -569,7 +581,7 @@ jobs:
             SECRETS_ARGS="${SECRETS_ARGS}${var_name}=${secret_name}:latest"
           }
           
-          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url ACHIEVEMENT_MANAGEMENT_SERVICE_URL:achievement-management-service-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret BUCKET_MANAGER_SERVICE_URL:bucket-manager-service-url TWITCH_EXTENSION_IDS:twitch-extension-ids BUCKET_MANAGER_URL:bucket-manager-url GEMINI_API_KEY:gemini-api-key TWITCH_EXTENSION_SECRET:twitch-api-secret TWITCH_IRC_NICK:twitch-irc-nick TWITCH_IRC_PASSWORD:twitch-irc-password TWITCH_IRC_REFRESH_TOKEN:twitch-irc-refresh-token TWITCH_IRC_CLIENT_ID:twitch-irc-client-id TWITCH_IRC_CLIENT_SECRET:twitch-irc-client-secret CHAT_API_KEY:chat-api-key; do
+          for pair in GCP_SA_KEY:gcp-sa-key DATABASE_URL:database-url TWITCH_CLIENT_ID:twitch-client-id GCP_BUCKET_NAME:gcp-bucket-name ALLOWED_ORIGINS:allowed-origins USE_MOCK:use-mock DISPATCHER_URL:dispatcher-url DB_SERVICE_URL:db-service-url SYNC_INTERVAL_MS:sync-interval-ms TWITCH_APP_ACCESS_TOKEN:twitch-app-access-token TWITCH_WEBHOOK_SECRET:twitch-webhook-secret TWITCH_ISSUER:twitch-issuer PUBLIC_EVENTSUB_CALLBACK:public-eventsub-callback MYSQL_DATABASE:mysql-database MYSQL_USER:mysql-user MYSQL_PASSWORD:mysql-password DB_GATEWAY_BASE_URL:db-gateway-base-url REDIS_URL:redis-url CACHE_TTL:cache-ttl AUTH_SERVICE_URL:auth-service-url FRONT_URL:front-url ACHIEVEMENT_MANAGEMENT_SERVICE_URL:achievement-management-service-url IA_SERVICE_URL:ia-service-url NOTIFICATION_HANDLER_URL:notification-handler-url JWT_SECRET:jwt-secret BUCKET_MANAGER_SERVICE_URL:bucket-manager-service-url TWITCH_EXTENSION_IDS:twitch-extension-ids BUCKET_MANAGER_URL:bucket-manager-url GEMINI_API_KEY:gemini-api-key TWITCH_EXTENSION_SECRET:twitch-api-secret TWITCH_IRC_NICK:twitch-irc-nick TWITCH_IRC_PASSWORD:twitch-irc-password TWITCH_IRC_REFRESH_TOKEN:twitch-irc-refresh-token TWITCH_IRC_CLIENT_ID:twitch-irc-client-id TWITCH_IRC_CLIENT_SECRET:twitch-irc-client-secret CHAT_API_KEY:chat-api-key TWITCH_LISTENER_URL:twitch-listener-url DISCORD_NOTIF_URL:discord-notif-url; do
             v="${pair%%:*}"
             s="${pair#*:}"
             [ "$v" = "ALLOWED_ORIGINS" ] && s="allowed-origins-$SERVICE_NAME"
@@ -813,6 +825,8 @@ jobs:
           TWITCH_IRC_CLIENT_ID: ${{ secrets.TWITCH_IRC_CLIENT_ID }}
           TWITCH_IRC_CLIENT_SECRET: ${{ secrets.TWITCH_IRC_CLIENT_SECRET }}
           CHAT_API_KEY: ${{ secrets.CHAT_API_KEY }}
+          TWITCH_LISTENER_URL: ${{ secrets.TWITCH_LISTENER_URL }}
+          DISCORD_NOTIF_URL: ${{ secrets.DISCORD_NOTIF_URL }}
         run: |
           case "$ENVIRONMENT" in
             integration|production)
